@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import GoTrue from "gotrue-js";
 
 export type UserRole = "co-president" | "vp" | "team-member" | "volunteer";
 export type Portfolio =
@@ -28,108 +29,82 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
+// Helper: map Netlify roles -> your app role + portfolio
+function mapRolesToUser(appRoles: string[], netlifyUser: any): User {
+  const email = netlifyUser.email as string;
+
+  // Example roles for in Netlify Identity:
+  // - co_president
+  // - vp_marketing
+  // - exec_marketing
+
+  // Base role
+  let role: UserRole = "team-member";
+
+  if (appRoles.includes("co_president")) role = "co-president";
+  else if (appRoles.some((r) => r.startsWith("vp_"))) role = "vp";
+  else if (appRoles.includes("volunteer")) role = "volunteer";
+
+  // Portfolio (for team-member or vp)
+  const vpRole = appRoles.find((r) => r.startsWith("vp_"));
+  const execRole = appRoles.find((r) => r.startsWith("exec_"));
+
+  const portfolioStr =
+    (vpRole ? vpRole.replace("vp_", "") : execRole ? execRole.replace("exec_", "") : undefined) as
+      | Portfolio
+      | undefined;
+
+  return {
+    id: netlifyUser.id,
+    email,
+    name: netlifyUser.user_metadata?.full_name || email,
+    role,
+    portfolio: portfolioStr,
+  };
+}
+
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const storedUser = localStorage.getItem("irc_user");
-    if (storedUser) {
-      try {
-        setUser(JSON.parse(storedUser));
-      } catch (error) {
-        console.error("Failed to parse stored user:", error);
-        localStorage.removeItem("irc_user");
-      }
-    }
-    setIsLoading(false);
+  // Netlify Identity (GoTrue) client
+  const auth = useMemo(() => {
+    // Works on Netlify: /.netlify/identity is the right endpoint
+    const APIUrl = `${window.location.origin}/.netlify/identity`;
+    return new GoTrue({ APIUrl, setCookie: true });
   }, []);
+
+  // Load existing session on refresh
+  useEffect(() => {
+    (async () => {
+      try {
+        const current = auth.currentUser();
+        if (current) {
+          const roles = current.app_metadata?.roles || [];
+          const mapped = mapRolesToUser(roles, current);
+          setUser(mapped);
+          localStorage.setItem("irc_user", JSON.stringify(mapped));
+        } else {
+          setUser(null);
+          localStorage.removeItem("irc_user");
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    })();
+  }, [auth]);
 
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      // Real login against Netlify Identity
+      const loggedIn = await auth.login(email, password, true);
 
-      const mockUsers: Record<string, User> = {
-        "president@irc.ca": {
-          id: "1",
-          email: "president@irc.ca",
-          name: "Alex Khan",
-          role: "co-president",
-        },
-        "vp-events@irc.ca": {
-          id: "2",
-          email: "vp-events@irc.ca",
-          name: "Sarah Ahmed",
-          role: "vp",
-          portfolio: "events",
-        },
-        "vp-finance@irc.ca": {
-          id: "3",
-          email: "vp-finance@irc.ca",
-          name: "Mohammad Hassan",
-          role: "vp",
-          portfolio: "finance",
-        },
-        "vp-charity@irc.ca": {
-          id: "4",
-          email: "vp-charity@irc.ca",
-          name: "Fatima Malik",
-          role: "vp",
-          portfolio: "charity",
-        },
-        "vp-marketing@irc.ca": {
-          id: "5",
-          email: "vp-marketing@irc.ca",
-          name: "Hassan Ibrahim",
-          role: "vp",
-          portfolio: "marketing",
-        },
-        "vp-internals@irc.ca": {
-          id: "6",
-          email: "vp-internals@irc.ca",
-          name: "Zainab Ali",
-          role: "vp",
-          portfolio: "internals",
-        },
-        "vp-advocacy@irc.ca": {
-          id: "7",
-          email: "vp-advocacy@irc.ca",
-          name: "Omar Rashid",
-          role: "vp",
-          portfolio: "advocacy",
-        },
-        "vp-externals@irc.ca": {
-          id: "8",
-          email: "vp-externals@irc.ca",
-          name: "Layla Hassan",
-          role: "vp",
-          portfolio: "externals",
-        },
-        "member@irc.ca": {
-          id: "9",
-          email: "member@irc.ca",
-          name: "Amir Khan",
-          role: "team-member",
-          portfolio: "events",
-        },
-        "volunteer@irc.ca": {
-          id: "10",
-          email: "volunteer@irc.ca",
-          name: "Noor Ahmed",
-          role: "volunteer",
-        },
-      };
+      const roles = loggedIn.app_metadata?.roles || [];
+      const mapped = mapRolesToUser(roles, loggedIn);
 
-      const userData = mockUsers[email];
-      if (userData && password === "password") {
-        setUser(userData);
-        localStorage.setItem("irc_user", JSON.stringify(userData));
-      } else {
-        throw new Error("Invalid email or password");
-      }
+      setUser(mapped);
+      localStorage.setItem("irc_user", JSON.stringify(mapped));
     } catch (error) {
       setUser(null);
       localStorage.removeItem("irc_user");
@@ -140,6 +115,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const logout = () => {
+    try {
+      auth.currentUser()?.logout();
+    } catch {
+      // ignore
+    }
     setUser(null);
     localStorage.removeItem("irc_user");
   };
@@ -161,8 +141,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth must be used within AuthProvider");
-  }
+  if (!context) throw new Error("useAuth must be used within AuthProvider");
   return context;
 };
