@@ -13,6 +13,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 
 import Index from "./pages/Index";
 import Login from "./pages/Login";
+import SetPassword from "./pages/SetPassword";
 import DashboardHub from "./pages/DashboardHub";
 import Portfolio from "./pages/Portfolio";
 import ApprovalsHub from "./pages/ApprovalsHub";
@@ -33,6 +34,7 @@ const App = () => (
               <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<Login />} />
+              <Route path="/set-password" element={<SetPassword />} />
               <Route
                 path="/dashboard"
                 element={

@@ -127,6 +127,18 @@ export default function Login() {
               ))}
             </div>
           </div>
+
+          <div className="mt-4 pt-4 border-t border-gray-200 text-center">
+            <p className="text-xs text-gray-600 mb-3">
+              First time user or new account created?
+            </p>
+            <a
+              href="/set-password"
+              className="inline-block text-xs font-semibold text-blue-600 hover:text-blue-700 transition-colors"
+            >
+              Set Your Password →
+            </a>
+          </div>
         </div>
 
         {/* Back to Home */}
