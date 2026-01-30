@@ -1,5 +1,5 @@
 import { RequestHandler } from "express";
-import { getInvitedUserInfo } from "@shared/invites";
+import { getInvitedUserInfo } from "../../shared/invites";
 
 export interface CheckInviteResponse {
   invited: boolean;
