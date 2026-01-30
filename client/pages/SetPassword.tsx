@@ -5,12 +5,6 @@ import GoTrue from "gotrue-js";
 import SetPasswordForm from "@/components/SetPasswordForm";
 import { getInvitedUserInfo } from "@shared/invites";
 
-declare global {
-  interface Window {
-    netlifyIdentity?: any;
-  }
-}
-
 function getHashParams(hash: string) {
   const h = hash.startsWith("#") ? hash.slice(1) : hash;
   return new URLSearchParams(h);
