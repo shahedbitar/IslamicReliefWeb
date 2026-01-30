@@ -784,7 +784,7 @@ export default function Portfolio() {
                     )
                     .map((reimbursement) => {
                       const relatedEvent = reimbursement.relatedEventId
-                        ? events.find((e) => e.id === reimbursement.relatedEventId)
+                        ? calendarEvents.find((e) => e.id === reimbursement.relatedEventId)
                         : null;
 
                       return (
