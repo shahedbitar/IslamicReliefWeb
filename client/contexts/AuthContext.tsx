@@ -146,8 +146,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      const loggedIn = await auth.login(normalizeEmail(email), password, true);
+      const normalizedEmail = normalizeEmail(email);
+
+      // Check if email is invited
+      const invitedUser = getInvitedUserInfo(normalizedEmail);
+      if (!invitedUser) {
+        throw new Error(
+          "This email is not invited. Please contact the administrator to request access."
+        );
+      }
+
+      // If invited, proceed with Netlify login
+      const loggedIn = await auth.login(normalizedEmail, password, true);
       const mapped = mapNetlifyUserToAppUser(loggedIn);
+
+      // Override/merge roles from invite list with Netlify roles
+      if (invitedUser.roles) {
+        mapped.roles = Array.from(
+          new Set([...mapped.roles, ...invitedUser.roles])
+        );
+        mapped.role = roleLabelFromRoles(mapped.roles);
+        mapped.portfolio = primaryPortfolioFromRoles(mapped.roles);
+      }
 
       setUser(mapped);
       localStorage.setItem("irc_user", JSON.stringify(mapped));
