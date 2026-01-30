@@ -44,7 +44,7 @@ export const INVITED_USERS: InvitedUser[] = [
     roles: ["exec_events"],
   },
   {
-    email: "shaedbitar4@gmail.com",
+    email: "shahedbitar4@gmail.com",
     name: "Shahed Bitar",
     roles: ["co_president"],
   },
