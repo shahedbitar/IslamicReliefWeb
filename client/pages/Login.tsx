@@ -3,12 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Mail, Lock, AlertCircle } from "lucide-react";
 
-declare global {
-  interface Window {
-    netlifyIdentity?: any;
-  }
-}
-
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
