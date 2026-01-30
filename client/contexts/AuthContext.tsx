@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 import GoTrue from "gotrue-js";
+import { getInvitedUserInfo } from "@shared/invites";
 
 export type UserRole = "co-president" | "vp" | "team-member" | "volunteer";
 export type Portfolio =
