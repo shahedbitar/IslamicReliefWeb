@@ -3,12 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { Mail } from "lucide-react";
 import GoTrue from "gotrue-js";
 import SetPasswordForm from "@/components/SetPasswordForm";
-
-declare global {
-  interface Window {
-    netlifyIdentity?: any;
-  }
-}
+import { getInvitedUserInfo } from "@shared/invites";
 
 function getHashParams(hash: string) {
   const h = hash.startsWith("#") ? hash.slice(1) : hash;
@@ -31,9 +26,16 @@ export default function SetPassword() {
     const searchParams = new URLSearchParams(location.search);
 
     return {
-      inviteToken: hashParams.get("invite_token") || searchParams.get("invite_token") || "",
-      recoveryToken: hashParams.get("recovery_token") || searchParams.get("recovery_token") || "",
-      emailFromQuery: hashParams.get("email") || searchParams.get("email") || "",
+      inviteToken:
+        hashParams.get("invite_token") ||
+        searchParams.get("invite_token") ||
+        "",
+      recoveryToken:
+        hashParams.get("recovery_token") ||
+        searchParams.get("recovery_token") ||
+        "",
+      emailFromQuery:
+        hashParams.get("email") || searchParams.get("email") || "",
     };
   }, [location.hash, location.search]);
 
@@ -55,7 +57,9 @@ export default function SetPassword() {
 
     const ni = window.netlifyIdentity;
     if (!ni) {
-      setError("Netlify Identity widget not loaded. Make sure the script tag is in index.html.");
+      setError(
+        "Netlify Identity widget not loaded. Make sure the script tag is in index.html.",
+      );
       return;
     }
 
@@ -91,6 +95,15 @@ export default function SetPassword() {
     const email = enteredEmail.trim().toLowerCase();
     if (!email.includes("@")) {
       setError("Please enter a valid email.");
+      return;
+    }
+
+    // Check if email is invited
+    const invitedUser = getInvitedUserInfo(email);
+    if (!invitedUser) {
+      setError(
+        "This email is not invited. Please contact the administrator to request access.",
+      );
       return;
     }
 
@@ -138,10 +151,10 @@ export default function SetPassword() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-gray-50 flex items-center justify-center px-4 py-8">
         <div className="w-full max-w-md bg-white rounded-xl shadow-lg p-8 text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Set Your Password</h1>
-          <p className="text-gray-600 mb-4">
-            Opening password setup…
-          </p>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            Set Your Password
+          </h1>
+          <p className="text-gray-600 mb-4">Opening password setup…</p>
           {error && <p className="text-sm text-red-700">{error}</p>}
           <a
             href="/login"
@@ -177,8 +190,12 @@ export default function SetPassword() {
             <Mail className="w-6 h-6 text-blue-600" />
           </div>
 
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Set Your Password</h1>
-          <p className="text-gray-600 mb-4">Enter your email. We’ll send you a secure setup link.</p>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            Set Your Password
+          </h1>
+          <p className="text-gray-600 mb-4">
+            Enter your email. We’ll send you a secure setup link.
+          </p>
 
           {info && <p className="text-sm text-green-700 mb-3">{info}</p>}
           {error && <p className="text-sm text-red-700 mb-3">{error}</p>}
@@ -205,7 +222,10 @@ export default function SetPassword() {
           </form>
 
           <div className="mt-6 pt-6 border-t border-gray-200">
-            <a href="/login" className="text-sm text-gray-600 hover:text-blue-600 transition-colors">
+            <a
+              href="/login"
+              className="text-sm text-gray-600 hover:text-blue-600 transition-colors"
+            >
               ← Back to Login
             </a>
           </div>

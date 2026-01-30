@@ -6,7 +6,9 @@ declare global {
     netlifyIdentity?: {
       init: () => void;
       on: (event: string, cb: (user?: any) => void) => void;
+      off: (event: string, cb?: (user?: any) => void) => void;
       open: () => void;
+      close: () => void;
     };
   }
 }

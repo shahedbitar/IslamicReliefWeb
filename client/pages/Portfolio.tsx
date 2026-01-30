@@ -11,7 +11,10 @@ import FundraisingForm from "@/components/FundraisingForm";
 import ReimbursementForm from "@/components/ReimbursementForm";
 import { useState } from "react";
 import { ArrowLeft, Plus, AlertCircle, DollarSign, Trash2 } from "lucide-react";
-import { Portfolio as PortfolioType, useCalendar } from "@/contexts/CalendarContext";
+import {
+  Portfolio as PortfolioType,
+  useCalendar,
+} from "@/contexts/CalendarContext";
 
 // Portfolio metadata
 const portfolioData: Record<
@@ -81,20 +84,29 @@ export default function Portfolio() {
   const navigate = useNavigate();
 
   const { user, canAccessPortfolio, hasRole } = useAuth();
-  const { createSocialEvent, fundraisingEntries, deleteFundraisingEntry, socialEvents, reimbursements, deleteReimbursement } =
-    useEvent();
+  const {
+    createSocialEvent,
+    fundraisingEntries,
+    deleteFundraisingEntry,
+    socialEvents,
+    reimbursements,
+    deleteReimbursement,
+  } = useEvent();
 
   const { events: calendarEvents } = useCalendar();
 
   const [activeTab, setActiveTab] = useState<TabType>("projects");
   const [isCreateEventOpen, setIsCreateEventOpen] = useState(false);
-  const [selectedCalendarEventData, setSelectedCalendarEventData] = useState<{
-    title?: string;
-    description?: string;
-    dateTime?: string;
-    location?: string;
-    budget?: string;
-  } | undefined>(undefined);
+  const [selectedCalendarEventData, setSelectedCalendarEventData] = useState<
+    | {
+        title?: string;
+        description?: string;
+        dateTime?: string;
+        location?: string;
+        budget?: string;
+      }
+    | undefined
+  >(undefined);
 
   const [isMarketingFormOpen, setIsMarketingFormOpen] = useState(false);
   const [isExternalsFormOpen, setIsExternalsFormOpen] = useState(false);
@@ -116,8 +128,7 @@ export default function Portfolio() {
 
   // ---- Permissions (Netlify roles) ----
   // View permission based on Netlify roles
-  const canView =
-    !!portfolio && canAccessPortfolio(portfolio as PortfolioType);
+  const canView = !!portfolio && canAccessPortfolio(portfolio as PortfolioType);
 
   // VP can view all but only edit their own portfolio (plus co-presidents)
   const vpPortfolio = user?.roles
@@ -245,8 +256,8 @@ export default function Portfolio() {
         portfolio === "internals"
           ? "Social Events"
           : canCreateEvents
-          ? "Projects / Events"
-          : "View Requests",
+            ? "Projects / Events"
+            : "View Requests",
       show: true,
     },
     {
@@ -262,8 +273,16 @@ export default function Portfolio() {
         portfolio === "charity" ||
         portfolio === "advocacy",
     },
-    { id: "fundraising", label: "Money Raised", show: portfolio === "finance" && canEdit },
-    { id: "minutes", label: "Meeting Minutes", show: portfolio === "internals" && canEdit },
+    {
+      id: "fundraising",
+      label: "Money Raised",
+      show: portfolio === "finance" && canEdit,
+    },
+    {
+      id: "minutes",
+      label: "Meeting Minutes",
+      show: portfolio === "internals" && canEdit,
+    },
   ];
 
   const visibleTabs = tabs.filter((t) => t.show);
@@ -391,7 +410,7 @@ export default function Portfolio() {
                         .sort(
                           (a, b) =>
                             new Date(b.createdAt).getTime() -
-                            new Date(a.createdAt).getTime()
+                            new Date(a.createdAt).getTime(),
                         )
                         .map((social) => (
                           <div
@@ -421,12 +440,16 @@ export default function Portfolio() {
                                 <div className="flex items-center gap-1 text-gray-600">
                                   <span className="font-medium">📅</span>
                                   <span>
-                                    {new Date(social.dateTime).toLocaleDateString()}{" "}
+                                    {new Date(
+                                      social.dateTime,
+                                    ).toLocaleDateString()}{" "}
                                     at{" "}
-                                    {new Date(social.dateTime).toLocaleTimeString(
-                                      [],
-                                      { hour: "2-digit", minute: "2-digit" }
-                                    )}
+                                    {new Date(
+                                      social.dateTime,
+                                    ).toLocaleTimeString([], {
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                    })}
                                   </span>
                                 </div>
                               )}
@@ -510,7 +533,7 @@ export default function Portfolio() {
                   {fundraisingEntries
                     .sort(
                       (a, b) =>
-                        new Date(b.date).getTime() - new Date(a.date).getTime()
+                        new Date(b.date).getTime() - new Date(a.date).getTime(),
                     )
                     .map((entry) => (
                       <div
@@ -619,7 +642,7 @@ export default function Portfolio() {
                     <button
                       onClick={() => {
                         const input = document.getElementById(
-                          "meeting-doc-url"
+                          "meeting-doc-url",
                         ) as HTMLInputElement;
                         handleAddMeetingMinute(input.value);
                         input.value = "";
@@ -727,8 +750,8 @@ export default function Portfolio() {
                 </div>
                 <p className="text-sm text-gray-600 mb-4">
                   <strong>Note:</strong> You can also request externals support
-                  by checking "Externals request submitted" in the Projects/Events
-                  tab when creating or editing an event.
+                  by checking "Externals request submitted" in the
+                  Projects/Events tab when creating or editing an event.
                 </p>
                 <button
                   onClick={() => setIsExternalsFormOpen(true)}
@@ -780,11 +803,13 @@ export default function Portfolio() {
                     .sort(
                       (a, b) =>
                         new Date(b.createdAt).getTime() -
-                        new Date(a.createdAt).getTime()
+                        new Date(a.createdAt).getTime(),
                     )
                     .map((reimbursement) => {
                       const relatedEvent = reimbursement.relatedEventId
-                        ? events.find((e) => e.id === reimbursement.relatedEventId)
+                        ? calendarEvents.find(
+                            (e) => e.id === reimbursement.relatedEventId,
+                          )
                         : null;
 
                       return (
@@ -794,8 +819,8 @@ export default function Portfolio() {
                             reimbursement.status === "approved"
                               ? "border-green-200"
                               : reimbursement.status === "rejected"
-                              ? "border-red-200"
-                              : "border-orange-200"
+                                ? "border-red-200"
+                                : "border-orange-200"
                           }`}
                         >
                           <div className="flex items-start justify-between mb-3">
@@ -824,7 +849,9 @@ export default function Portfolio() {
                                 </span>
                               )}
                               <p className="text-xs text-gray-500">
-                                {new Date(reimbursement.createdAt).toLocaleDateString()}
+                                {new Date(
+                                  reimbursement.createdAt,
+                                ).toLocaleDateString()}
                               </p>
                             </div>
                           </div>
@@ -868,10 +895,14 @@ export default function Portfolio() {
                           )}
 
                           <div className="flex items-center justify-between text-xs text-gray-500">
-                            <span>Submitted by {reimbursement.submittedBy}</span>
+                            <span>
+                              Submitted by {reimbursement.submittedBy}
+                            </span>
                             {reimbursement.status === "pending" && (
                               <button
-                                onClick={() => deleteReimbursement(reimbursement.id)}
+                                onClick={() =>
+                                  deleteReimbursement(reimbursement.id)
+                                }
                                 className="text-red-600 hover:text-red-700 font-semibold"
                               >
                                 Delete
@@ -981,7 +1012,10 @@ export default function Portfolio() {
                     placeholder="Add details about the social event..."
                     value={newSocial.description}
                     onChange={(e) =>
-                      setNewSocial({ ...newSocial, description: e.target.value })
+                      setNewSocial({
+                        ...newSocial,
+                        description: e.target.value,
+                      })
                     }
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-blue-500 min-h-24"
                   />

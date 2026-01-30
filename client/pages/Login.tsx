@@ -3,12 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Mail, Lock, AlertCircle } from "lucide-react";
 
-declare global {
-  interface Window {
-    netlifyIdentity?: any;
-  }
-}
-
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -21,17 +15,18 @@ export default function Login() {
     e.preventDefault();
     setError("");
     setIsLoading(true);
-  
+
     try {
       await login(email.trim().toLowerCase(), password);
       navigate("/dashboard");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Login failed. Please try again.");
+      setError(
+        err instanceof Error ? err.message : "Login failed. Please try again.",
+      );
     } finally {
       setIsLoading(false);
     }
   };
-  
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-gray-50 flex items-center justify-center px-4">
@@ -103,18 +98,13 @@ export default function Login() {
           </form>
 
           <div className="mt-4 pt-4 border-t border-gray-200 text-center">
-  <p className="text-xs text-gray-600 mb-3">
-    First time user? Use the invite email you received to set your password.
-  </p>
-  <button
-    type="button"
-    onClick={() => window.netlifyIdentity?.open()}
-    className="inline-block text-xs font-semibold text-blue-600 hover:text-blue-700 transition-colors"
-  >
-    Open Password Setup
-  </button>
-</div>
-</div> 
+            <p className="text-xs text-gray-600">
+              This is an invite-only portal. If you received an invite email
+              with a password setup link, use the password you set to sign in
+              above.
+            </p>
+          </div>
+        </div>
 
         {/* Back to Home */}
         <div className="text-center">
