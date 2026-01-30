@@ -95,6 +95,15 @@ export default function SetPassword() {
       return;
     }
 
+    // Check if email is invited
+    const invitedUser = getInvitedUserInfo(email);
+    if (!invitedUser) {
+      setError(
+        "This email is not invited. Please contact the administrator to request access."
+      );
+      return;
+    }
+
     setIsLoading(true);
     try {
       // Sends recovery email (password setup link). Only works if user exists in Identity.
