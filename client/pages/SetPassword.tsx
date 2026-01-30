@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { Mail } from "lucide-react";
 import GoTrue from "gotrue-js";
 import SetPasswordForm from "@/components/SetPasswordForm";
+import { getInvitedUserInfo } from "@shared/invites";
 
 declare global {
   interface Window {
