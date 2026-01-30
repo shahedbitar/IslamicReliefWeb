@@ -103,16 +103,9 @@ export default function Login() {
           </form>
 
           <div className="mt-4 pt-4 border-t border-gray-200 text-center">
-  <p className="text-xs text-gray-600 mb-3">
-    First time user? Use the invite email you received to set your password.
+  <p className="text-xs text-gray-600">
+    This is an invite-only portal. If you received an invite email with a password setup link, use the password you set to sign in above.
   </p>
-  <button
-    type="button"
-    onClick={() => window.netlifyIdentity?.open()}
-    className="inline-block text-xs font-semibold text-blue-600 hover:text-blue-700 transition-colors"
-  >
-    Open Password Setup
-  </button>
 </div>
 </div> 
 
