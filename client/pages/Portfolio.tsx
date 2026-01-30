@@ -60,16 +60,32 @@ const portfolioData: Record<
 };
 
 // Portfolios that have calendars
-const CALENDAR_PORTFOLIOS: PortfolioType[] = ["charity", "events", "advocacy", "internals", "marketing"];
+const CALENDAR_PORTFOLIOS: PortfolioType[] = [
+  "charity",
+  "events",
+  "advocacy",
+  "internals",
+  "marketing",
+];
 
-type TabType = "projects" | "calendar" | "marketing" | "fundraising" | "minutes" | "cross-portfolio";
+type TabType =
+  | "projects"
+  | "calendar"
+  | "marketing"
+  | "fundraising"
+  | "minutes"
+  | "cross-portfolio";
 
 export default function Portfolio() {
   const { portfolio } = useParams<{ portfolio: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const { createSocialEvent, fundraisingEntries, deleteFundraisingEntry, socialEvents, reimbursements, deleteReimbursement } = useEvent();
+
+  const { user, canAccessPortfolio, hasRole } = useAuth();
+  const { createSocialEvent, fundraisingEntries, deleteFundraisingEntry, socialEvents, reimbursements, deleteReimbursement } =
+    useEvent();
+
   const { events: calendarEvents } = useCalendar();
+
   const [activeTab, setActiveTab] = useState<TabType>("projects");
   const [isCreateEventOpen, setIsCreateEventOpen] = useState(false);
   const [selectedCalendarEventData, setSelectedCalendarEventData] = useState<{
@@ -79,26 +95,41 @@ export default function Portfolio() {
     location?: string;
     budget?: string;
   } | undefined>(undefined);
+
   const [isMarketingFormOpen, setIsMarketingFormOpen] = useState(false);
   const [isExternalsFormOpen, setIsExternalsFormOpen] = useState(false);
   const [isCreateSocialOpen, setIsCreateSocialOpen] = useState(false);
   const [isFundraisingFormOpen, setIsFundraisingFormOpen] = useState(false);
   const [isReimbursementFormOpen, setIsReimbursementFormOpen] = useState(false);
-  const [newSocial, setNewSocial] = useState({ title: "", description: "", dateTime: "", location: "" });
+
+  const [newSocial, setNewSocial] = useState({
+    title: "",
+    description: "",
+    dateTime: "",
+    location: "",
+  });
+
   const [showAddMinutes, setShowAddMinutes] = useState(false);
-  const [meetingMinutes, setMeetingMinutes] = useState<Array<{ id: string; date: string; googleDocUrl: string }>>([]);
+  const [meetingMinutes, setMeetingMinutes] = useState<
+    Array<{ id: string; date: string; googleDocUrl: string }>
+  >([]);
 
-  // Define permissions early (before any conditional checks)
-  const canEdit =
-    user?.role === "co-president" ||
-    (user?.role === "vp" && user?.portfolio === portfolio);
-
+  // ---- Permissions (Netlify roles) ----
+  // View permission based on Netlify roles
   const canView =
-    user?.role === "co-president" ||
-    user?.role === "vp" ||
-    (user?.role === "team-member" && user?.portfolio === portfolio) ||
-    user?.role === "volunteer";
+    !!portfolio && canAccessPortfolio(portfolio as PortfolioType);
 
+  // VP can view all but only edit their own portfolio (plus co-presidents)
+  const vpPortfolio = user?.roles
+    ?.find((r) => r.startsWith("vp_"))
+    ?.replace("vp_", "");
+
+  const canEdit =
+    hasRole("co_president") ||
+    (!!vpPortfolio && vpPortfolio === portfolio) ||
+    (!!portfolio && hasRole(`exec_${portfolio}`));
+
+  // ---- Basic portfolio validity ----
   if (!portfolio || !portfolioData[portfolio as PortfolioType]) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -117,7 +148,7 @@ export default function Portfolio() {
               Portfolio Not Found
             </h1>
             <p className="text-gray-600 mt-2">
-              You don't have access to this portfolio.
+              This portfolio page doesn’t exist.
             </p>
           </div>
         </div>
@@ -125,7 +156,7 @@ export default function Portfolio() {
     );
   }
 
-  // Check if user can view this portfolio
+  // ---- Access check ----
   if (!canView) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -144,7 +175,7 @@ export default function Portfolio() {
               Access Restricted
             </h1>
             <p className="text-gray-600 mt-2">
-              You don't have permission to view this portfolio.
+              You don’t have permission to view this portfolio.
             </p>
           </div>
         </div>
@@ -153,7 +184,7 @@ export default function Portfolio() {
   }
 
   const handleCalendarEventClick = (eventId: string) => {
-    const calendarEvent = calendarEvents.find(e => e.id === eventId);
+    const calendarEvent = calendarEvents.find((e) => e.id === eventId);
     if (calendarEvent) {
       setSelectedCalendarEventData({
         title: calendarEvent.title,
@@ -185,7 +216,7 @@ export default function Portfolio() {
     if (googleDocUrl) {
       const minute = {
         id: Date.now().toString(),
-        date: new Date().toISOString().split('T')[0],
+        date: new Date().toISOString().split("T")[0],
         googleDocUrl,
       };
       setMeetingMinutes([minute, ...meetingMinutes]);
@@ -194,26 +225,48 @@ export default function Portfolio() {
   };
 
   const handleDeleteMeetingMinute = (id: string) => {
-    setMeetingMinutes(meetingMinutes.filter(m => m.id !== id));
+    setMeetingMinutes(meetingMinutes.filter((m) => m.id !== id));
   };
 
   const data = portfolioData[portfolio as PortfolioType];
   const hasCalendar = CALENDAR_PORTFOLIOS.includes(portfolio as PortfolioType);
 
-  // Only Events, Charity, and Advocacy can create events
+  // Only Events, Charity, and Advocacy can create events (and must have edit permission)
   const canCreateEvents =
     canEdit &&
-    (portfolio === "events" || portfolio === "charity" || portfolio === "advocacy");
+    (portfolio === "events" ||
+      portfolio === "charity" ||
+      portfolio === "advocacy");
 
   const tabs: Array<{ id: TabType; label: string; show: boolean }> = [
-    { id: "projects", label: portfolio === "internals" ? "Social Events" : (canCreateEvents ? "Projects / Events" : "View Requests"), show: portfolio === "internals" || canCreateEvents ? true : true },
-    { id: "calendar", label: portfolio === "marketing" ? "Posting Calendar" : "Calendar", show: hasCalendar },
-    { id: "cross-portfolio", label: "Cross-Portfolio Requests", show: canView && (portfolio === "events" || portfolio === "charity" || portfolio === "advocacy") },
+    {
+      id: "projects",
+      label:
+        portfolio === "internals"
+          ? "Social Events"
+          : canCreateEvents
+          ? "Projects / Events"
+          : "View Requests",
+      show: true,
+    },
+    {
+      id: "calendar",
+      label: portfolio === "marketing" ? "Posting Calendar" : "Calendar",
+      show: hasCalendar,
+    },
+    {
+      id: "cross-portfolio",
+      label: "Cross-Portfolio Requests",
+      show:
+        portfolio === "events" ||
+        portfolio === "charity" ||
+        portfolio === "advocacy",
+    },
     { id: "fundraising", label: "Money Raised", show: portfolio === "finance" && canEdit },
     { id: "minutes", label: "Meeting Minutes", show: portfolio === "internals" && canEdit },
   ];
 
-  const visibleTabs = tabs.filter(t => t.show);
+  const visibleTabs = tabs.filter((t) => t.show);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -230,20 +283,24 @@ export default function Portfolio() {
 
         {/* Header */}
         <div className="mb-4">
-          <h1 className="text-3xl font-bold text-gray-900 mb-1">
-            {data.name}
-          </h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-1">{data.name}</h1>
           <p className="text-sm text-gray-600">{data.description}</p>
         </div>
 
         {/* View-Only Notice for VPs viewing other portfolios */}
-        {user?.role === "vp" && user?.portfolio !== portfolio && (
-          <div className="mb-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <p className="text-sm text-blue-900">
-              <span className="font-semibold">👁️ View Mode:</span> You're viewing this portfolio as a snapshot. Only <strong>{portfolioData[user.portfolio as PortfolioType]?.name}</strong> portfolio has full edit access.
-            </p>
-          </div>
-        )}
+        {user?.roles?.some((r) => r.startsWith("vp_")) &&
+          vpPortfolio !== portfolio && (
+            <div className="mb-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <p className="text-sm text-blue-900">
+                <span className="font-semibold">👁️ View Mode:</span> You’re
+                viewing this portfolio as a snapshot. Only{" "}
+                <strong>
+                  {portfolioData[vpPortfolio as PortfolioType]?.name}
+                </strong>{" "}
+                has full edit access.
+              </p>
+            </div>
+          )}
 
         {/* Action Buttons */}
         {canCreateEvents && (
@@ -259,7 +316,7 @@ export default function Portfolio() {
         )}
 
         {/* Internals - Social Events */}
-        {portfolio === "internals" && (
+        {portfolio === "internals" && canEdit && (
           <div className="mb-4">
             <button
               onClick={() => setIsCreateSocialOpen(true)}
@@ -288,7 +345,9 @@ export default function Portfolio() {
         {canEdit && !canCreateEvents && (
           <div className="mb-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
             <p className="text-sm text-blue-900">
-              <span className="font-semibold">ℹ️ View Mode:</span> Only Events, Charity, and Advocacy portfolios can create events. You can view and manage requests below.
+              <span className="font-semibold">ℹ️ View Mode:</span> Only Events,
+              Charity, and Advocacy portfolios can create events. You can view
+              and manage requests below.
             </p>
           </div>
         )}
@@ -310,7 +369,6 @@ export default function Portfolio() {
           ))}
         </div>
 
-
         {/* Projects / Events Tab */}
         {activeTab === "projects" && (
           <>
@@ -322,18 +380,29 @@ export default function Portfolio() {
                       <span className="w-3 h-3 bg-purple-500 rounded-full"></span>
                       Social Events
                     </h3>
-                    <span className="text-sm text-gray-600">{socialEvents.length} events</span>
+                    <span className="text-sm text-gray-600">
+                      {socialEvents.length} events
+                    </span>
                   </div>
 
                   {socialEvents.length > 0 ? (
                     <div className="space-y-4">
                       {socialEvents
-                        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                        .sort(
+                          (a, b) =>
+                            new Date(b.createdAt).getTime() -
+                            new Date(a.createdAt).getTime()
+                        )
                         .map((social) => (
-                          <div key={social.id} className="bg-white rounded-lg p-4 border border-purple-200">
+                          <div
+                            key={social.id}
+                            className="bg-white rounded-lg p-4 border border-purple-200"
+                          >
                             <div className="flex items-start justify-between mb-2">
                               <div>
-                                <h4 className="font-semibold text-gray-900">{social.title}</h4>
+                                <h4 className="font-semibold text-gray-900">
+                                  {social.title}
+                                </h4>
                                 <p className="text-sm text-gray-600 mt-1">
                                   Created by {social.createdBy}
                                 </p>
@@ -343,13 +412,22 @@ export default function Portfolio() {
                               </span>
                             </div>
                             {social.description && (
-                              <p className="text-sm text-gray-600 mt-2">{social.description}</p>
+                              <p className="text-sm text-gray-600 mt-2">
+                                {social.description}
+                              </p>
                             )}
                             <div className="flex flex-wrap gap-3 text-sm mt-3">
                               {social.dateTime && (
                                 <div className="flex items-center gap-1 text-gray-600">
                                   <span className="font-medium">📅</span>
-                                  <span>{new Date(social.dateTime).toLocaleDateString()} at {new Date(social.dateTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                  <span>
+                                    {new Date(social.dateTime).toLocaleDateString()}{" "}
+                                    at{" "}
+                                    {new Date(social.dateTime).toLocaleTimeString(
+                                      [],
+                                      { hour: "2-digit", minute: "2-digit" }
+                                    )}
+                                  </span>
                                 </div>
                               )}
                               {social.location && (
@@ -364,14 +442,18 @@ export default function Portfolio() {
                     </div>
                   ) : (
                     <div className="text-center py-8 bg-gray-50 rounded-lg border border-gray-200">
-                      <p className="text-gray-600 mb-4">No social events created yet</p>
-                      <button
-                        onClick={() => setIsCreateSocialOpen(true)}
-                        className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors"
-                      >
-                        <Plus className="w-4 h-4" />
-                        Create Social Event
-                      </button>
+                      <p className="text-gray-600 mb-4">
+                        No social events created yet
+                      </p>
+                      {canEdit && (
+                        <button
+                          onClick={() => setIsCreateSocialOpen(true)}
+                          className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors"
+                        >
+                          <Plus className="w-4 h-4" />
+                          Create Social Event
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
@@ -390,7 +472,9 @@ export default function Portfolio() {
         {/* Calendar Tab */}
         {activeTab === "calendar" && hasCalendar && (
           <div>
-            <h3 className="text-sm font-semibold text-gray-900 mb-2">Calendar</h3>
+            <h3 className="text-sm font-semibold text-gray-900 mb-2">
+              Calendar
+            </h3>
             <CalendarComponent
               portfolio={portfolio as PortfolioType}
               onEventClick={handleCalendarEventClick}
@@ -399,7 +483,7 @@ export default function Portfolio() {
         )}
 
         {/* Fundraising Tab - Finance Only */}
-        {activeTab === "fundraising" && portfolio === "finance" && (
+        {activeTab === "fundraising" && portfolio === "finance" && canEdit && (
           <div className="space-y-6">
             <div className="bg-white rounded-lg p-6 border border-gray-200">
               <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
@@ -410,7 +494,9 @@ export default function Portfolio() {
               {fundraisingEntries.length === 0 ? (
                 <div className="text-center py-12">
                   <DollarSign className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                  <p className="text-gray-500 mb-4">No fundraising entries yet</p>
+                  <p className="text-gray-500 mb-4">
+                    No fundraising entries yet
+                  </p>
                   <button
                     onClick={() => setIsFundraisingFormOpen(true)}
                     className="px-4 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-colors inline-flex items-center gap-2"
@@ -422,7 +508,10 @@ export default function Portfolio() {
               ) : (
                 <div className="space-y-3">
                   {fundraisingEntries
-                    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                    .sort(
+                      (a, b) =>
+                        new Date(b.date).getTime() - new Date(a.date).getTime()
+                    )
                     .map((entry) => (
                       <div
                         key={entry.id}
@@ -430,7 +519,9 @@ export default function Portfolio() {
                       >
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
-                            <h3 className="font-semibold text-gray-900">{entry.title}</h3>
+                            <h3 className="font-semibold text-gray-900">
+                              {entry.title}
+                            </h3>
                             <span className="text-xs bg-green-200 text-green-800 px-2 py-1 rounded">
                               {entry.source || "Fundraising"}
                             </span>
@@ -464,9 +555,15 @@ export default function Portfolio() {
                   <div className="mt-6 pt-6 border-t border-gray-200">
                     <div className="flex justify-between items-center">
                       <div>
-                        <p className="text-sm text-gray-600">Total Money Raised</p>
+                        <p className="text-sm text-gray-600">
+                          Total Money Raised
+                        </p>
                         <p className="text-3xl font-bold text-green-600 mt-1">
-                          ${fundraisingEntries.reduce((sum, e) => sum + e.amount, 0).toLocaleString()} CAD
+                          $
+                          {fundraisingEntries
+                            .reduce((sum, e) => sum + e.amount, 0)
+                            .toLocaleString()}{" "}
+                          CAD
                         </p>
                       </div>
                       <button
@@ -485,7 +582,7 @@ export default function Portfolio() {
         )}
 
         {/* Meeting Minutes Tab - Internals Only */}
-        {activeTab === "minutes" && portfolio === "internals" && (
+        {activeTab === "minutes" && portfolio === "internals" && canEdit && (
           <div className="space-y-6">
             <div className="bg-white rounded-lg p-6 border border-gray-200">
               <div className="flex items-center justify-between mb-4">
@@ -521,7 +618,9 @@ export default function Portfolio() {
                   <div className="flex gap-2">
                     <button
                       onClick={() => {
-                        const input = document.getElementById("meeting-doc-url") as HTMLInputElement;
+                        const input = document.getElementById(
+                          "meeting-doc-url"
+                        ) as HTMLInputElement;
                         handleAddMeetingMinute(input.value);
                         input.value = "";
                       }}
@@ -541,7 +640,9 @@ export default function Portfolio() {
 
               {meetingMinutes.length === 0 ? (
                 <div className="text-center py-8 bg-gray-50 rounded-lg border border-gray-200">
-                  <p className="text-gray-600 mb-4">No meeting minutes submitted yet</p>
+                  <p className="text-gray-600 mb-4">
+                    No meeting minutes submitted yet
+                  </p>
                   <button
                     onClick={() => setShowAddMinutes(true)}
                     className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
@@ -553,7 +654,10 @@ export default function Portfolio() {
               ) : (
                 <div className="space-y-3">
                   {meetingMinutes.map((minute) => (
-                    <div key={minute.id} className="flex justify-between items-center p-4 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors">
+                    <div
+                      key={minute.id}
+                      className="flex justify-between items-center p-4 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
+                    >
                       <div className="flex-1">
                         <p className="text-xs text-gray-500 mb-2">
                           {new Date(minute.date).toLocaleDateString()}
@@ -592,7 +696,8 @@ export default function Portfolio() {
                     📣 Request Marketing Support
                   </h2>
                   <p className="text-gray-600 mt-2">
-                    Submit a request to the Marketing team for promotional content, social media posts, or campaign support.
+                    Submit a request to the Marketing team for promotional
+                    content, social media posts, or campaign support.
                   </p>
                 </div>
               </div>
@@ -614,12 +719,16 @@ export default function Portfolio() {
                       🌐 Request External Outreach
                     </h2>
                     <p className="text-gray-600 mt-2">
-                      Submit a request to the Externals team for community partnerships, outreach coordination, or external communications.
+                      Submit a request to the Externals team for community
+                      partnerships, outreach coordination, or external
+                      communications.
                     </p>
                   </div>
                 </div>
                 <p className="text-sm text-gray-600 mb-4">
-                  <strong>Note:</strong> You can also request externals support by checking "Externals request submitted" in the Projects/Events tab when creating or editing an event.
+                  <strong>Note:</strong> You can also request externals support
+                  by checking "Externals request submitted" in the Projects/Events
+                  tab when creating or editing an event.
                 </p>
                 <button
                   onClick={() => setIsExternalsFormOpen(true)}
@@ -639,7 +748,8 @@ export default function Portfolio() {
                     💰 Submit Finance Reimbursement
                   </h2>
                   <p className="text-gray-600 mt-2">
-                    Submit expense receipts for approval. Include receipt image, amount requested, description, and related event details.
+                    Submit expense receipts for approval. Include receipt image,
+                    amount requested, description, and related event details.
                   </p>
                 </div>
               </div>
@@ -660,16 +770,23 @@ export default function Portfolio() {
                     <span className="w-3 h-3 bg-orange-500 rounded-full"></span>
                     All Reimbursement Submissions
                   </h2>
-                  <span className="text-sm text-gray-600">{reimbursements.length} submissions</span>
+                  <span className="text-sm text-gray-600">
+                    {reimbursements.length} submissions
+                  </span>
                 </div>
 
                 <div className="space-y-4">
                   {reimbursements
-                    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                    .sort(
+                      (a, b) =>
+                        new Date(b.createdAt).getTime() -
+                        new Date(a.createdAt).getTime()
+                    )
                     .map((reimbursement) => {
                       const relatedEvent = reimbursement.relatedEventId
                         ? events.find((e) => e.id === reimbursement.relatedEventId)
                         : null;
+
                       return (
                         <div
                           key={reimbursement.id}
@@ -677,8 +794,8 @@ export default function Portfolio() {
                             reimbursement.status === "approved"
                               ? "border-green-200"
                               : reimbursement.status === "rejected"
-                                ? "border-red-200"
-                                : "border-orange-200"
+                              ? "border-red-200"
+                              : "border-orange-200"
                           }`}
                         >
                           <div className="flex items-start justify-between mb-3">
@@ -732,14 +849,21 @@ export default function Portfolio() {
 
                           {relatedEvent && (
                             <p className="text-xs text-gray-600 mb-3">
-                              📅 Related to: <span className="font-medium">{relatedEvent.title}</span>
+                              📅 Related to:{" "}
+                              <span className="font-medium">
+                                {relatedEvent.title}
+                              </span>
                             </p>
                           )}
 
                           {reimbursement.approverComment && (
                             <div className="bg-white rounded p-3 border border-gray-200 mb-3">
-                              <p className="text-xs font-semibold text-gray-700 mb-1">Finance Note:</p>
-                              <p className="text-sm text-gray-700">{reimbursement.approverComment}</p>
+                              <p className="text-xs font-semibold text-gray-700 mb-1">
+                                Finance Note:
+                              </p>
+                              <p className="text-sm text-gray-700">
+                                {reimbursement.approverComment}
+                              </p>
                             </div>
                           )}
 
@@ -800,7 +924,9 @@ export default function Portfolio() {
         {isCreateSocialOpen && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 w-full max-w-md">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">Create Social Event</h2>
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">
+                Create Social Event
+              </h2>
 
               <div className="space-y-3">
                 <div>
@@ -811,7 +937,9 @@ export default function Portfolio() {
                     type="text"
                     placeholder="e.g., Team Dinner"
                     value={newSocial.title}
-                    onChange={(e) => setNewSocial({ ...newSocial, title: e.target.value })}
+                    onChange={(e) =>
+                      setNewSocial({ ...newSocial, title: e.target.value })
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-blue-500"
                   />
                 </div>
@@ -823,7 +951,9 @@ export default function Portfolio() {
                   <input
                     type="datetime-local"
                     value={newSocial.dateTime}
-                    onChange={(e) => setNewSocial({ ...newSocial, dateTime: e.target.value })}
+                    onChange={(e) =>
+                      setNewSocial({ ...newSocial, dateTime: e.target.value })
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-blue-500"
                   />
                 </div>
@@ -836,7 +966,9 @@ export default function Portfolio() {
                     type="text"
                     placeholder="e.g., Campus Cafeteria"
                     value={newSocial.location}
-                    onChange={(e) => setNewSocial({ ...newSocial, location: e.target.value })}
+                    onChange={(e) =>
+                      setNewSocial({ ...newSocial, location: e.target.value })
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-blue-500"
                   />
                 </div>
@@ -848,7 +980,9 @@ export default function Portfolio() {
                   <textarea
                     placeholder="Add details about the social event..."
                     value={newSocial.description}
-                    onChange={(e) => setNewSocial({ ...newSocial, description: e.target.value })}
+                    onChange={(e) =>
+                      setNewSocial({ ...newSocial, description: e.target.value })
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-blue-500 min-h-24"
                   />
                 </div>

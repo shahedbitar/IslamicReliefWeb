@@ -3,6 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Mail, Lock, AlertCircle } from "lucide-react";
 
+declare global {
+  interface Window {
+    netlifyIdentity?: any;
+  }
+}
+
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -15,26 +21,17 @@ export default function Login() {
     e.preventDefault();
     setError("");
     setIsLoading(true);
-
+  
     try {
-      await login(email, password);
+      await login(email.trim().toLowerCase(), password);
       navigate("/dashboard");
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Login failed. Please try again."
-      );
+      setError(err instanceof Error ? err.message : "Login failed. Please try again.");
     } finally {
       setIsLoading(false);
     }
   };
-
-  const demoAccounts = [
-    { email: "president@irc.ca", role: "Co-President" },
-    { email: "vp-events@irc.ca", role: "VP - Events" },
-    { email: "vp-finance@irc.ca", role: "VP - Finance" },
-    { email: "member@irc.ca", role: "Team Member" },
-    { email: "volunteer@irc.ca", role: "Volunteer" },
-  ];
+  
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-gray-50 flex items-center justify-center px-4">
@@ -105,41 +102,19 @@ export default function Login() {
             </button>
           </form>
 
-          <div className="mt-4 pt-4 border-t border-gray-200">
-            <p className="text-xs text-gray-500 text-center mb-3">
-              Demo accounts (password: password)
-            </p>
-            <div className="space-y-2">
-              {demoAccounts.map((account) => (
-                <button
-                  key={account.email}
-                  onClick={() => {
-                    setEmail(account.email);
-                    setPassword("password");
-                  }}
-                  className="w-full text-left text-xs px-3 py-2 rounded border border-gray-200 hover:bg-gray-50 transition-colors"
-                >
-                  <span className="font-semibold text-gray-900">
-                    {account.email}
-                  </span>
-                  <span className="text-gray-500 ml-2">({account.role})</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
           <div className="mt-4 pt-4 border-t border-gray-200 text-center">
-            <p className="text-xs text-gray-600 mb-3">
-              First time user or new account created?
-            </p>
-            <a
-              href="/set-password"
-              className="inline-block text-xs font-semibold text-blue-600 hover:text-blue-700 transition-colors"
-            >
-              Set Your Password →
-            </a>
-          </div>
-        </div>
+  <p className="text-xs text-gray-600 mb-3">
+    First time user? Use the invite email you received to set your password.
+  </p>
+  <button
+    type="button"
+    onClick={() => window.netlifyIdentity?.open()}
+    className="inline-block text-xs font-semibold text-blue-600 hover:text-blue-700 transition-colors"
+  >
+    Open Password Setup
+  </button>
+</div>
+</div> 
 
         {/* Back to Home */}
         <div className="text-center">
