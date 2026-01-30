@@ -47,6 +47,10 @@ export const INVITED_USERS: InvitedUser[] = [
     email: "shahedbitar4@gmail.com",
     name: "Shahed Bitar",
     roles: ["co_president"],
+  },  {
+    email: "shahedbitar4@hotmail.com",
+    name: "Shahed Bitars",
+    roles: ["co_president"],
   },
   // Add more invited users here with their roles
   // {
