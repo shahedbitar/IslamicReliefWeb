@@ -95,6 +95,15 @@ export default function Login() {
             >
               {isLoading ? "Signing in..." : "Sign In"}
             </button>
+
+            <div className="mt-3 text-center">
+              <a
+                href="/set-password"
+                className="text-sm text-blue-600 hover:text-blue-700 transition-colors"
+              >
+                Forgot password?
+              </a>
+            </div>
           </form>
 
           <div className="mt-4 pt-4 border-t border-gray-200 text-center">
