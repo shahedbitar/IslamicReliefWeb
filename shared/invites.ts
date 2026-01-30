@@ -56,7 +56,9 @@ export const INVITED_USERS: InvitedUser[] = [
  */
 export function isEmailInvited(email: string): InvitedUser | null {
   const normalized = email.trim().toLowerCase();
-  return INVITED_USERS.find((u) => u.email.toLowerCase() === normalized) || null;
+  return (
+    INVITED_USERS.find((u) => u.email.toLowerCase() === normalized) || null
+  );
 }
 
 /**

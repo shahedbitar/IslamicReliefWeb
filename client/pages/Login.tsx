@@ -15,17 +15,18 @@ export default function Login() {
     e.preventDefault();
     setError("");
     setIsLoading(true);
-  
+
     try {
       await login(email.trim().toLowerCase(), password);
       navigate("/dashboard");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Login failed. Please try again.");
+      setError(
+        err instanceof Error ? err.message : "Login failed. Please try again.",
+      );
     } finally {
       setIsLoading(false);
     }
   };
-  
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-gray-50 flex items-center justify-center px-4">
@@ -97,11 +98,13 @@ export default function Login() {
           </form>
 
           <div className="mt-4 pt-4 border-t border-gray-200 text-center">
-  <p className="text-xs text-gray-600">
-    This is an invite-only portal. If you received an invite email with a password setup link, use the password you set to sign in above.
-  </p>
-</div>
-</div> 
+            <p className="text-xs text-gray-600">
+              This is an invite-only portal. If you received an invite email
+              with a password setup link, use the password you set to sign in
+              above.
+            </p>
+          </div>
+        </div>
 
         {/* Back to Home */}
         <div className="text-center">

@@ -1,4 +1,10 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import GoTrue from "gotrue-js";
 import { getInvitedUserInfo } from "@shared/invites";
 
@@ -67,7 +73,15 @@ function primaryPortfolioFromRoles(roles: string[]): Portfolio | undefined {
   const execRole = roles.find((r) => r.startsWith("exec_"));
 
   const raw = vpRole?.replace("vp_", "") || execRole?.replace("exec_", "");
-  const allowed: Portfolio[] = ["charity", "events", "finance", "marketing", "internals", "advocacy", "externals"];
+  const allowed: Portfolio[] = [
+    "charity",
+    "events",
+    "finance",
+    "marketing",
+    "internals",
+    "advocacy",
+    "externals",
+  ];
 
   return allowed.includes(raw as Portfolio) ? (raw as Portfolio) : undefined;
 }
@@ -79,7 +93,10 @@ function primaryPortfolioFromRoles(roles: string[]): Portfolio | undefined {
  * - exec_<portfolio> => only that portfolio
  * - (optional) volunteer => none or limited
  */
-function canAccessPortfolioFromRoles(roles: string[], portfolio: Portfolio): boolean {
+function canAccessPortfolioFromRoles(
+  roles: string[],
+  portfolio: Portfolio,
+): boolean {
   if (roles.includes("co_president")) return true;
   if (roles.some((r) => r.startsWith("vp_"))) return true;
 
@@ -117,7 +134,9 @@ function mapNetlifyUserToAppUser(netlifyUser: any): User {
   };
 }
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -152,7 +171,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const invitedUser = getInvitedUserInfo(normalizedEmail);
       if (!invitedUser) {
         throw new Error(
-          "This email is not invited. Please contact the administrator to request access."
+          "This email is not invited. Please contact the administrator to request access.",
         );
       }
 
@@ -163,7 +182,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Override/merge roles from invite list with Netlify roles
       if (invitedUser.roles) {
         mapped.roles = Array.from(
-          new Set([...mapped.roles, ...invitedUser.roles])
+          new Set([...mapped.roles, ...invitedUser.roles]),
         );
         mapped.role = roleLabelFromRoles(mapped.roles);
         mapped.portfolio = primaryPortfolioFromRoles(mapped.roles);

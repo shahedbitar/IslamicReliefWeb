@@ -5,6 +5,7 @@ This project uses an invite-only login system with password-based authentication
 ## How It Works
 
 ### 1. **Setup: Add Invited Users**
+
 Edit `/shared/invites.ts` and add users with their emails and roles:
 
 ```typescript
@@ -33,8 +34,9 @@ Users can have one or more roles:
 - **`volunteer`** - Limited access, no approvals
 
 Example roles:
+
 ```typescript
-roles: ["vp_finance", "exec_charity"] // VP of Finance + Exec of Charity
+roles: ["vp_finance", "exec_charity"]; // VP of Finance + Exec of Charity
 ```
 
 ### 3. **Login Flow**
@@ -63,6 +65,7 @@ roles: ["vp_finance", "exec_charity"] // VP of Finance + Exec of Charity
 ## Development
 
 To test locally:
+
 1. Ensure Netlify Identity is configured
 2. Add test emails to `INVITED_USERS`
 3. Run `npm run dev`
@@ -78,15 +81,18 @@ To test locally:
 ## Troubleshooting
 
 **"Email not invited" error on login:**
+
 - Check that the email is in the `INVITED_USERS` array in `/shared/invites.ts`
 - Ensure email matches exactly (case-insensitive, but must match)
 
 **Password setup email not arriving:**
+
 - Check spam folder
 - Verify Netlify Identity is enabled on your site
 - Ensure the email is in the invite list
 
 **User can't set password:**
+
 - User email must be in `INVITED_USERS`
 - Netlify Identity email notifications must be enabled
 
