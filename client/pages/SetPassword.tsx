@@ -17,6 +17,7 @@ export default function SetPassword() {
   const [isLoading, setIsLoading] = useState(false);
   const [enteredEmail, setEnteredEmail] = useState("");
   const [submittedEmail, setSubmittedEmail] = useState("");
+  const [step, setStep] = useState<"email" | "password">("email");
 
   const [info, setInfo] = useState("");
   const [error, setError] = useState("");
@@ -49,41 +50,10 @@ export default function SetPassword() {
     if (!submittedEmail && tokens.emailFromQuery) {
       setSubmittedEmail(tokens.emailFromQuery);
     }
-  }, [submittedEmail, tokens.emailFromQuery]);
-
-  // If invite_token exists, open Netlify Identity modal immediately
-  useEffect(() => {
-    if (!tokens.inviteToken) return;
-
-    const ni = window.netlifyIdentity;
-    if (!ni) {
-      setError(
-        "Netlify Identity widget not loaded. Make sure the script tag is in index.html.",
-      );
-      return;
+    if (!enteredEmail && tokens.emailFromQuery) {
+      setEnteredEmail(tokens.emailFromQuery);
     }
-
-    // Ensure we don't stack multiple listeners on rerenders
-    const onLogin = () => {
-      try {
-        ni.close();
-      } catch {
-        // ignore
-      }
-      navigate("/dashboard");
-    };
-
-    ni.off?.("login", onLogin);
-    ni.on("login", onLogin);
-
-    ni.init();
-    ni.open(); // This shows the invite/password UI
-
-    // Cleanup
-    return () => {
-      ni.off?.("login", onLogin);
-    };
-  }, [tokens.inviteToken, navigate]);
+  }, [enteredEmail, submittedEmail, tokens.emailFromQuery]);
 
   const emailToUse = submittedEmail;
 
@@ -91,6 +61,11 @@ export default function SetPassword() {
     e.preventDefault();
     setError("");
     setInfo("");
+
+    if (!tokens.inviteToken && !tokens.recoveryToken) {
+      setError("Please open the password setup link sent to your email.");
+      return;
+    }
 
     const email = enteredEmail.trim().toLowerCase();
     if (!email.includes("@")) {
@@ -108,16 +83,9 @@ export default function SetPassword() {
     }
 
     setIsLoading(true);
-    try {
-      // Sends recovery email (password setup link). Only works if user exists in Identity.
-      await auth.requestPasswordRecovery(email);
-      setSubmittedEmail(email);
-      setInfo("Check your email for a password setup link.");
-    } catch (err: any) {
-      setError(err?.message || "Could not send password email.");
-    } finally {
-      setIsLoading(false);
-    }
+    setSubmittedEmail(email);
+    setStep("password");
+    setIsLoading(false);
   };
 
   const handleSetPassword = async (newPassword: string) => {
@@ -126,6 +94,23 @@ export default function SetPassword() {
     setInfo("");
 
     try {
+      if (tokens.inviteToken) {
+        const accepted = await auth.acceptInvite(
+          tokens.inviteToken,
+          newPassword,
+          true,
+        );
+        try {
+          await accepted.logout();
+        } catch {
+          // ignore logout errors
+        }
+        navigate("/login", {
+          state: { email: emailToUse, passwordSet: true },
+        });
+        return;
+      }
+
       // Recovery token flow: confirm token, then update password (REAL password)
       if (tokens.recoveryToken) {
         await auth.recover(tokens.recoveryToken);
@@ -146,42 +131,24 @@ export default function SetPassword() {
     }
   };
 
-  // Invite token page: we don't render a form; we open the widget automatically.
-  if (tokens.inviteToken) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-gray-50 flex items-center justify-center px-4 py-8">
-        <div className="w-full max-w-md bg-white rounded-xl shadow-lg p-8 text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">
-            Set Your Password
-          </h1>
-          <p className="text-gray-600 mb-4">Opening password setup…</p>
-          {error && <p className="text-sm text-red-700">{error}</p>}
-          <a
-            href="/login"
-            className="inline-block mt-6 text-sm text-gray-600 hover:text-blue-600 transition-colors"
-          >
-            ← Back to Login
-          </a>
-        </div>
-      </div>
-    );
-  }
-
   // Recovery token page: show your custom SetPasswordForm
-  if (tokens.recoveryToken) {
+  if (tokens.recoveryToken || step === "password") {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-gray-50 flex items-center justify-center px-4 py-8">
         <SetPasswordForm
           email={emailToUse || " "}
           onSubmit={handleSetPassword}
-          onCancel={() => navigate("/login")}
+          onCancel={() => {
+            setStep("email");
+            setSubmittedEmail("");
+          }}
           isLoading={isLoading}
         />
       </div>
     );
   }
 
-  // Default: email entry -> send recovery link
+  // Default: email entry -> validate invite list
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-gray-50 flex items-center justify-center px-4 py-8">
       <div className="w-full max-w-md">
@@ -191,10 +158,10 @@ export default function SetPassword() {
           </div>
 
           <h1 className="text-2xl font-bold text-gray-900 mb-2">
-            Set Your Password
+            Enter your email
           </h1>
           <p className="text-gray-600 mb-4">
-            Enter your email. We’ll send you a secure setup link.
+            We’ll verify your invite and continue to set your password.
           </p>
 
           {info && <p className="text-sm text-green-700 mb-3">{info}</p>}
@@ -217,7 +184,7 @@ export default function SetPassword() {
               disabled={isLoading}
               className="w-full py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-60"
             >
-              {isLoading ? "Sending..." : "Send password setup link"}
+              {isLoading ? "Checking..." : "Continue"}
             </button>
           </form>
 
