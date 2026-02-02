@@ -88,6 +88,7 @@ export default function Portfolio() {
     createSocialEvent,
     fundraisingEntries,
     deleteFundraisingEntry,
+    deleteSocialEvent,
     socialEvents,
     reimbursements,
     deleteReimbursement,
@@ -426,9 +427,21 @@ export default function Portfolio() {
                                   Created by {social.createdBy}
                                 </p>
                               </div>
-                              <span className="text-xs font-semibold text-purple-600 bg-purple-50 px-2 py-1 rounded">
-                                🎉 Social
-                              </span>
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs font-semibold text-purple-600 bg-purple-50 px-2 py-1 rounded">
+                                  🎉 Social
+                                </span>
+                                {canEdit && (
+                                  <button
+                                    type="button"
+                                    onClick={() => deleteSocialEvent(social.id)}
+                                    className="text-red-600 hover:text-red-700"
+                                    aria-label={`Delete ${social.title}`}
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                )}
+                              </div>
                             </div>
                             {social.description && (
                               <p className="text-sm text-gray-600 mt-2">

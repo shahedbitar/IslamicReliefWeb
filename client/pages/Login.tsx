@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Mail, Lock, AlertCircle } from "lucide-react";
 
@@ -7,13 +7,35 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [info, setInfo] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const emailParam = params.get("email");
+    const passwordSetParam = params.get("passwordSet") === "1";
+    const state = location.state as
+      | { email?: string; passwordSet?: boolean }
+      | undefined;
+
+    if (!email && state?.email) {
+      setEmail(state.email);
+    } else if (!email && emailParam) {
+      setEmail(emailParam);
+    }
+
+    if (passwordSetParam || state?.passwordSet) {
+      setInfo("Password set successfully. Please sign in.");
+    }
+  }, [email, location.search, location.state]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setInfo("");
     setIsLoading(true);
 
     try {
@@ -50,6 +72,12 @@ export default function Login() {
             <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
               <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
               <p className="text-sm text-red-800">{error}</p>
+            </div>
+          )}
+          {info && (
+            <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-green-800">{info}</p>
             </div>
           )}
 
