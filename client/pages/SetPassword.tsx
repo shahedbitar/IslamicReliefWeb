@@ -1,18 +1,12 @@
-import { useEffect, useMemo, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Mail } from "lucide-react";
 import GoTrue from "gotrue-js";
 import SetPasswordForm from "@/components/SetPasswordForm";
 import { getInvitedUserInfo } from "@shared/invites";
 
-function getHashParams(hash: string) {
-  const h = hash.startsWith("#") ? hash.slice(1) : hash;
-  return new URLSearchParams(h);
-}
-
 export default function SetPassword() {
   const navigate = useNavigate();
-  const location = useLocation();
 
   const [isLoading, setIsLoading] = useState(false);
   const [enteredEmail, setEnteredEmail] = useState("");
@@ -22,38 +16,10 @@ export default function SetPassword() {
   const [info, setInfo] = useState("");
   const [error, setError] = useState("");
 
-  const tokens = useMemo(() => {
-    const hashParams = getHashParams(location.hash);
-    const searchParams = new URLSearchParams(location.search);
-
-    return {
-      inviteToken:
-        hashParams.get("invite_token") ||
-        searchParams.get("invite_token") ||
-        "",
-      recoveryToken:
-        hashParams.get("recovery_token") ||
-        searchParams.get("recovery_token") ||
-        "",
-      emailFromQuery:
-        hashParams.get("email") || searchParams.get("email") || "",
-    };
-  }, [location.hash, location.search]);
-
   const auth = useMemo(() => {
     const APIUrl = `${window.location.origin}/.netlify/identity`;
     return new GoTrue({ APIUrl, setCookie: true });
   }, []);
-
-  // Prefill email if present in link
-  useEffect(() => {
-    if (!submittedEmail && tokens.emailFromQuery) {
-      setSubmittedEmail(tokens.emailFromQuery);
-    }
-    if (!enteredEmail && tokens.emailFromQuery) {
-      setEnteredEmail(tokens.emailFromQuery);
-    }
-  }, [enteredEmail, submittedEmail, tokens.emailFromQuery]);
 
   const emailToUse = submittedEmail;
 
@@ -61,11 +27,6 @@ export default function SetPassword() {
     e.preventDefault();
     setError("");
     setInfo("");
-
-    if (!tokens.inviteToken && !tokens.recoveryToken) {
-      setError("Please open the password setup link sent to your email.");
-      return;
-    }
 
     const email = enteredEmail.trim().toLowerCase();
     if (!email.includes("@")) {
@@ -94,45 +55,29 @@ export default function SetPassword() {
     setInfo("");
 
     try {
-      if (tokens.inviteToken) {
-        const accepted = await auth.acceptInvite(
-          tokens.inviteToken,
-          newPassword,
-          true,
-        );
-        try {
-          await accepted.logout();
-        } catch {
-          // ignore logout errors
-        }
-        navigate("/login", {
-          state: { email: emailToUse, passwordSet: true },
-        });
-        return;
+      const created = await auth.signup(emailToUse, newPassword, {
+        full_name: emailToUse,
+      });
+      try {
+        await created.logout();
+      } catch {
+        // ignore logout errors
       }
-
-      // Recovery token flow: confirm token, then update password (REAL password)
-      if (tokens.recoveryToken) {
-        await auth.recover(tokens.recoveryToken);
-        const user = auth.currentUser();
-        if (!user) throw new Error("No user session found after recovery.");
-        await user.update({ password: newPassword });
-
-        // Optional: auto-login is typically already true after recover/update
-        navigate("/login", { state: { email: emailToUse, passwordSet: true } });
-        return;
-      }
-
-      setError("Please open the password setup link sent to your email.");
+      navigate("/login", { state: { email: emailToUse, passwordSet: true } });
+      return;
     } catch (err: any) {
-      setError(err?.message || "Failed to set password.");
+      const message = err?.message || "Failed to set password.";
+      if (message.toLowerCase().includes("already")) {
+        setError("Account already exists. Please sign in.");
+      } else {
+        setError(message);
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Recovery token page: show your custom SetPasswordForm
-  if (tokens.recoveryToken || step === "password") {
+  if (step === "password") {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-gray-50 flex items-center justify-center px-4 py-8">
         <SetPasswordForm
