@@ -128,6 +128,27 @@ export default function Calendar({
       });
     }
 
+    if (!isShared && portfolio === "internals") {
+      const socialEventsForDay = socialEvents
+        .filter((social) => {
+          const socialDate = social.dateTime.split("T")[0];
+          return socialDate === dateStr;
+        })
+        .map((social) => ({
+          id: social.id,
+          title: social.title,
+          date: dateStr,
+          portfolio: "internals" as Portfolio,
+          type: "event" as const,
+          visible: true,
+          createdBy: social.createdBy,
+          createdAt: social.createdAt,
+          description: social.description,
+        }));
+
+      return [...eventsForDay, ...socialEventsForDay];
+    }
+
     return eventsForDay;
   };
 

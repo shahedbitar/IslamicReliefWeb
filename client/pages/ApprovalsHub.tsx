@@ -1,5 +1,6 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useEvent } from "@/contexts/EventContext";
+import { useCalendar } from "@/contexts/CalendarContext";
 import AuthHeader from "@/components/AuthHeader";
 import EventCard from "@/components/EventCard";
 import { useNavigate } from "react-router-dom";
@@ -8,6 +9,7 @@ import { ArrowLeft, CheckCircle, AlertCircle, Zap, Check } from "lucide-react";
 export default function ApprovalsHub() {
   const { user } = useAuth();
   const { events, canMarkReady, updateEventStatus } = useEvent();
+  const { events: calendarEvents, addEvent } = useCalendar();
   const navigate = useNavigate();
 
   // Only co-presidents can access this page
@@ -40,7 +42,28 @@ export default function ApprovalsHub() {
   );
 
   const handleApproveEvent = (eventId: string) => {
+    const event = events.find((item) => item.id === eventId);
     updateEventStatus(eventId, "approved");
+    if (!event?.dateTime) return;
+    if (!["charity", "events", "advocacy"].includes(event.portfolio)) return;
+    const date = event.dateTime.split("T")[0];
+    const alreadyExists = calendarEvents.some(
+      (calEvent) =>
+        calEvent.title.toLowerCase() === event.title.toLowerCase() &&
+        calEvent.date === date &&
+        calEvent.portfolio === event.portfolio,
+    );
+    if (!alreadyExists) {
+      addEvent({
+        title: event.title,
+        description: event.description,
+        date,
+        portfolio: event.portfolio,
+        type: "event",
+        visible: true,
+        createdBy: event.createdBy,
+      });
+    }
   };
 
   return (
