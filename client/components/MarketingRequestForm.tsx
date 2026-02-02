@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { X, Send } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useNotifications } from "@/contexts/NotificationsContext";
 import { useEvent } from "@/contexts/EventContext";
 import { Portfolio } from "@/contexts/CalendarContext";
 
@@ -17,7 +16,6 @@ export default function MarketingRequestForm({
   portfolio,
 }: MarketingRequestFormProps) {
   const { user } = useAuth();
-  const { addNotification } = useNotifications();
   const { createEvent } = useEvent();
   const [formData, setFormData] = useState({
     title: "",
@@ -51,14 +49,6 @@ export default function MarketingRequestForm({
       dateTime: formData.deadline || undefined,
       marketingRequested: true,
       externalsNeeded: false,
-    });
-
-    // Notify Marketing team
-    addNotification({
-      type: "task-assigned",
-      title: "Marketing Request Submitted",
-      message: `"${formData.title}" from ${portfolio} portfolio has been sent to the Marketing team`,
-      relatedTo: `marketing-request-${Date.now()}`,
     });
 
     // Reset form
