@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Event, useEvent } from "@/contexts/EventContext";
-import { ChevronDown, ChevronUp, Check } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { ChevronDown, ChevronUp, Check, Trash2 } from "lucide-react";
 
 interface EventCardProps {
   event: Event;
@@ -10,7 +11,8 @@ interface EventCardProps {
 export default function EventCard({ event, onStatusChange }: EventCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showExternalsComment, setShowExternalsComment] = useState(false);
-  const { updateChecklistItem, updateEventStatus, canMarkReady, updateExternalsComment } = useEvent();
+  const { updateChecklistItem, updateEventStatus, canMarkReady, updateExternalsComment, deleteEvent } = useEvent();
+  const { user } = useAuth();
 
   const externalsItem = event.checklist.find(item =>
     item.label.includes("Externals request")
@@ -20,6 +22,15 @@ export default function EventCard({ event, onStatusChange }: EventCardProps) {
   const totalItems = event.checklist.length;
   const completionPercent = totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
   const isReady = canMarkReady(event.id);
+  const canDelete =
+    ["events", "charity"].includes(event.portfolio) &&
+    (user?.role === "co-president" ||
+      user?.role === "vp" ||
+      user?.role === "team-member");
+
+  const handleDelete = () => {
+    deleteEvent(event.id);
+  };
 
   const handleMarkReady = () => {
     if (isReady) {
@@ -39,16 +50,29 @@ export default function EventCard({ event, onStatusChange }: EventCardProps) {
               <p className="text-sm text-gray-600 mt-1">{event.description}</p>
             )}
           </div>
-          <button
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="ml-4 p-1 hover:bg-gray-100 rounded transition-colors"
-          >
-            {isExpanded ? (
-              <ChevronUp className="w-5 h-5 text-gray-600" />
-            ) : (
-              <ChevronDown className="w-5 h-5 text-gray-600" />
+          <div className="ml-4 flex items-center gap-2">
+            {canDelete && (
+              <button
+                type="button"
+                onClick={handleDelete}
+                className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
+                aria-label={`Delete ${event.title}`}
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
             )}
-          </button>
+            <button
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="p-1 hover:bg-gray-100 rounded transition-colors"
+              aria-label={isExpanded ? "Collapse event" : "Expand event"}
+            >
+              {isExpanded ? (
+                <ChevronUp className="w-5 h-5 text-gray-600" />
+              ) : (
+                <ChevronDown className="w-5 h-5 text-gray-600" />
+              )}
+            </button>
+          </div>
         </div>
 
         {/* Meta Information */}

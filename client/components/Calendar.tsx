@@ -16,7 +16,7 @@ export default function Calendar({
   isDashboard = false,
   onEventClick,
 }: CalendarProps) {
-  const [currentDate, setCurrentDate] = useState(new Date(2024, 5, 1)); // June 2024
+  const [currentDate, setCurrentDate] = useState(new Date(2026, 1, 1)); // Feb 2026
   const { getEventsByPortfolio, getSharedCalendarEvents, getEventsByDate } =
     useCalendar();
   const { getEventsByPortfolio: getTrackedEvents, socialEvents } = useEvent();
@@ -126,6 +126,27 @@ export default function Calendar({
         // Show if awaiting approval (status = "ready") or already approved (status = "approved")
         return !trackedEvent || (trackedEvent.status === "ready" || trackedEvent.status === "approved");
       });
+    }
+
+    if (!isShared && portfolio === "internals") {
+      const socialEventsForDay = socialEvents
+        .filter((social) => {
+          const socialDate = social.dateTime.split("T")[0];
+          return socialDate === dateStr;
+        })
+        .map((social) => ({
+          id: social.id,
+          title: social.title,
+          date: dateStr,
+          portfolio: "internals" as Portfolio,
+          type: "event" as const,
+          visible: true,
+          createdBy: social.createdBy,
+          createdAt: social.createdAt,
+          description: social.description,
+        }));
+
+      return [...eventsForDay, ...socialEventsForDay];
     }
 
     return eventsForDay;
