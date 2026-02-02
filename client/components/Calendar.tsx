@@ -16,7 +16,7 @@ export default function Calendar({
   isDashboard = false,
   onEventClick,
 }: CalendarProps) {
-  const [currentDate, setCurrentDate] = useState(new Date(2024, 5, 1)); // June 2024
+  const [currentDate, setCurrentDate] = useState(new Date(2026, 1, 1)); // Feb 2026
   const { getEventsByPortfolio, getSharedCalendarEvents, getEventsByDate } =
     useCalendar();
   const { getEventsByPortfolio: getTrackedEvents, socialEvents } = useEvent();
