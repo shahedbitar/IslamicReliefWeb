@@ -63,6 +63,11 @@ export default function SetPassword() {
       return;
     }
 
+    const redirectTarget = tokens.emailFromQuery
+      ? `/login?passwordSet=1&email=${encodeURIComponent(tokens.emailFromQuery)}`
+      : "/login?passwordSet=1";
+    sessionStorage.setItem("irc_post_login_redirect", redirectTarget);
+
     // Ensure we don't stack multiple listeners on rerenders
     const onLogin = () => {
       try {
@@ -70,7 +75,6 @@ export default function SetPassword() {
       } catch {
         // ignore
       }
-      navigate("/dashboard");
     };
 
     ni.off?.("login", onLogin);
