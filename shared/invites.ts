@@ -78,7 +78,7 @@ export const INVITED_USERS: InvitedUser[] = [
     roles: ["co_president"],
   },
   {
-    email: "iammaham082@gmail.com",
+    email: "iammaham08@gmail.com",
     name: "Maham Khan",
     roles: ["co_president"],
   },
