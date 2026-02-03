@@ -27,38 +27,7 @@ export interface InvitedUser {
  * - "exec_<portfolio>" => Executive lead for a portfolio (full access)
  * - "volunteer" => Limited access, no approvals
  */
-export const INVITED_USERS: InvitedUser[] = [
-  {
-    email: "admin@islamicreliefcanada.org",
-    name: "Admin",
-    roles: ["co_president"],
-  },
-  {
-    email: "finance@islamicreliefcanada.org",
-    name: "Finance Lead",
-    roles: ["vp_finance"],
-  },
-  {
-    email: "events@islamicreliefcanada.org",
-    name: "Events Coordinator",
-    roles: ["exec_events"],
-  },
-  {
-    email: "shahedbitar4@gmail.com",
-    name: "Shahed Bitar",
-    roles: ["co_president"],
-  },  {
-    email: "shahedbitar4@hotmail.com",
-    name: "Shahed Bitars",
-    roles: ["co_president"],
-  },
-  // Add more invited users here with their roles
-  // {
-  //   email: "user@example.com",
-  //   name: "User Name",
-  //   roles: ["team-member"],
-  // },
-];
+export const INVITED_USERS: InvitedUser[] = [];
 
 /**
  * Check if an email is in the invite list

@@ -4,7 +4,7 @@ import { useCalendar } from "@/contexts/CalendarContext";
 import CalendarComponent from "@/components/Calendar";
 import AuthHeader from "@/components/AuthHeader";
 import { Link } from "react-router-dom";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Calendar,
   TrendingUp,
@@ -35,25 +35,57 @@ interface MeetingMinute {
 
 export default function DashboardHub() {
   const { user } = useAuth();
-  const { events, getUpcomingSocials, fundraisingEntries, getTotalMoneyRaised, socialEvents } = useEvent();
+  const { events, fundraisingEntries, getTotalMoneyRaised, socialEvents } = useEvent();
   const { events: calendarEvents } = useCalendar();
-  const [activeTab, setActiveTab] = useState<"money" | "minutes" | "socials">("money");
+  const [activeTab, setActiveTab] = useState<"money" | "minutes" | "team">("money");
   const [portfolioView, setPortfolioView] = useState<"my" | "all">("my"); // For VPs: my portfolio or all portfolios
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
-  const [meetingMinutes, setMeetingMinutes] = useState<MeetingMinute[]>([
-    {
-      id: "m1",
-      date: "2024-06-15",
-      googleDocUrl: "https://docs.google.com/document/d/1example/edit",
-    },
-    {
-      id: "m2",
-      date: "2024-06-08",
-      googleDocUrl: "https://docs.google.com/document/d/2example/edit",
-    },
-  ]);
+  const [meetingMinutes, setMeetingMinutes] = useState<MeetingMinute[]>(() => {
+    const stored = localStorage.getItem("irc_meeting_minutes");
+    if (stored) {
+      try {
+        return JSON.parse(stored) as MeetingMinute[];
+      } catch {
+        // ignore parse errors
+      }
+    }
+    return [];
+  });
   const [showAddMinutes, setShowAddMinutes] = useState(false);
   const [newMinute, setNewMinute] = useState({ googleDocUrl: "" });
+  const [selectedTeamPortfolio, setSelectedTeamPortfolio] = useState("presidential-team");
+
+  useEffect(() => {
+    localStorage.setItem("irc_meeting_minutes", JSON.stringify(meetingMinutes));
+  }, [meetingMinutes]);
+
+  const teamMembers: Array<{
+    name: string;
+    position: string;
+    portfolio: string;
+    uwoEmail: string;
+    gmail: string;
+  }> = [];
+
+  const teamPortfolios = [
+    { id: "finance", label: "Finance" },
+    { id: "marketing", label: "Marketing" },
+    { id: "advocacy", label: "Advocacy" },
+    { id: "internals", label: "Internals" },
+    { id: "externals", label: "Externals" },
+    { id: "presidential-team", label: "Presidential Team" },
+    { id: "charity", label: "Charity" },
+  ];
+
+  const execMembers = teamMembers.filter(
+    (member) =>
+      member.position.toLowerCase().includes("vp") ||
+      member.position.toLowerCase().includes("president"),
+  );
+
+  const visibleTeamMembers = execMembers.filter(
+    (member) => member.portfolio === selectedTeamPortfolio,
+  );
 
   // Get selected event details (check both calendar events and social events)
   const selectedEvent = selectedEventId
@@ -298,16 +330,16 @@ export default function DashboardHub() {
                 </div>
               </button>
               <button
-                onClick={() => setActiveTab("socials")}
+                onClick={() => setActiveTab("team")}
                 className={`px-4 py-2 font-semibold text-sm transition-colors ${
-                  activeTab === "socials"
+                  activeTab === "team"
                     ? "text-blue-600 border-b-2 border-blue-600"
                     : "text-gray-600 hover:text-gray-900"
                 }`}
               >
                 <div className="flex items-center gap-2">
-                  <span className="text-lg">🎉</span>
-                  Upcoming Socials
+                  <span className="text-lg">🤝</span>
+                  View Team
                 </div>
               </button>
             </div>
@@ -431,34 +463,57 @@ export default function DashboardHub() {
               </div>
             )}
 
-            {/* Upcoming Socials Tab */}
-            {activeTab === "socials" && (
+            {/* View Team Tab */}
+            {activeTab === "team" && (
               <div className="bg-white rounded-lg border border-gray-200 p-6">
-                <h3 className="font-semibold text-gray-900 mb-4">Upcoming Team Socials</h3>
-
-                <div className="space-y-3 max-h-96 overflow-y-auto">
-                  {getUpcomingSocials().map(social => (
-                    <div key={social.id} className="pb-3 border-b border-gray-100 last:border-0">
-                      <h4 className="text-sm font-semibold text-gray-900">{social.title}</h4>
-                      <p className="text-xs text-gray-500 mt-1">
-                        📅 {new Date(social.dateTime).toLocaleDateString()} at {new Date(social.dateTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </p>
-                      {social.location && (
-                        <p className="text-xs text-gray-600 mt-1">
-                          📍 {social.location}
-                        </p>
-                      )}
-                      {social.description && (
-                        <p className="text-sm text-gray-700 mt-2">{social.description}</p>
-                      )}
-                      <p className="text-xs text-gray-500 mt-2">
-                        Posted by {social.createdBy}
-                      </p>
-                    </div>
+                <h3 className="font-semibold text-gray-900 mb-4">View the Team</h3>
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {teamPortfolios.map((portfolio) => (
+                    <button
+                      key={portfolio.id}
+                      type="button"
+                      onClick={() => setSelectedTeamPortfolio(portfolio.id)}
+                      className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${
+                        selectedTeamPortfolio === portfolio.id
+                          ? "bg-blue-600 text-white"
+                          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                      }`}
+                    >
+                      {portfolio.label}
+                    </button>
                   ))}
-                  {getUpcomingSocials().length === 0 && (
-                    <p className="text-sm text-gray-500 text-center py-8">
-                      No upcoming socials scheduled
+                </div>
+                <div className="space-y-3 max-h-96 overflow-y-auto">
+                  {visibleTeamMembers.length > 0 ? (
+                    visibleTeamMembers.map((member) => (
+                      <div
+                        key={`${member.name}-${member.portfolio}`}
+                        className="p-3 border border-gray-200 rounded-lg"
+                      >
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <p className="font-semibold text-gray-900">
+                              {member.name}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {member.position}
+                            </p>
+                          </div>
+                          <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-1 rounded-full capitalize">
+                            {member.portfolio.replace("-", " ")}
+                          </span>
+                        </div>
+                        <div className="mt-2 text-xs text-gray-600 space-y-1">
+                          {member.uwoEmail && (
+                            <p>UWO: {member.uwoEmail}</p>
+                          )}
+                          {member.gmail && <p>Gmail: {member.gmail}</p>}
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-gray-500 text-center py-6">
+                      No executive members listed yet for this portfolio.
                     </p>
                   )}
                 </div>

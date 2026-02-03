@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { X, Send } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useNotifications } from "@/contexts/NotificationsContext";
 import { useEvent } from "@/contexts/EventContext";
 import { Portfolio } from "@/contexts/CalendarContext";
 
@@ -17,7 +16,6 @@ export default function ExternalsRequestForm({
   portfolio,
 }: ExternalsRequestFormProps) {
   const { user } = useAuth();
-  const { addNotification } = useNotifications();
   const { createEvent } = useEvent();
   const [formData, setFormData] = useState({
     title: "",
@@ -52,14 +50,6 @@ export default function ExternalsRequestForm({
       marketingRequested: false,
       externalsNeeded: true,
       externalsComment: `${formData.type}: ${formData.description}`,
-    });
-
-    // Notify Externals team
-    addNotification({
-      type: "task-assigned",
-      title: "External Outreach Request Submitted",
-      message: `"${formData.title}" from ${portfolio} portfolio has been sent to the Externals team`,
-      relatedTo: `externals-request-${Date.now()}`,
     });
 
     // Reset form
