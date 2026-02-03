@@ -27,7 +27,83 @@ export interface InvitedUser {
  * - "exec_<portfolio>" => Executive lead for a portfolio (full access)
  * - "volunteer" => Limited access, no approvals
  */
-export const INVITED_USERS: InvitedUser[] = [];
+export const INVITED_USERS: InvitedUser[] = [
+  {
+    email: "admin@islamicreliefcanada.org",
+    name: "Admin",
+    roles: ["co_president"],
+  },
+  {
+    email: "finance@islamicreliefcanada.org",
+    name: "Finance Lead",
+    roles: ["vp_finance"],
+  },
+  {
+    email: "events@islamicreliefcanada.org",
+    name: "Events Coordinator",
+    roles: ["exec_events"],
+  },
+  {
+    email: "shahedbitar4@gmail.com",
+    name: "Shahed Bitar",
+    roles: ["co_president"],
+  },  {
+    email: "shahedbitar4@hotmail.com",
+    name: "Shahed Bitars",
+    roles: ["co_president"],
+  },
+  {
+    email: "rayankhxn1@gmail.com",
+    name: "Rayan Khan",
+    roles: ["vp_charity"],
+  },
+  {
+    email: "zooal.rammahi@gmail.com",
+    name: "Zainab Al-Rammahi",
+    roles: ["vp_advocacy"],
+  },
+  {
+    email: "ayeeshassan22@gmail.com",
+    name: "Ayesha Hassan",
+    roles: ["vp_finance"],
+  },
+  {
+    email: "asibanoori@hotmail.com",
+    name: "Asiba Noori",
+    roles: ["vp_internals"],
+  },
+  {
+    email: "kamalfayzan@gmail.com",
+    name: "Fayzan Kamal",
+    roles: ["co_president"],
+  },
+  {
+    email: "iammaham08@gmail.com",
+    name: "Maham Khan",
+    roles: ["co_president"],
+  },
+  {
+    email: "isakhan2215@gmail.com",
+    name: "Isa Khan",
+    roles: ["vp_externals"],
+  },
+  {
+    email: "tareksosy7@gmail.com",
+    name: "Tala Areksosy",
+    roles: ["vp_marketing"],
+  },
+  {
+    email: "eshal7raza@gmail.com",
+    name: "Eshal Raza",
+    roles: ["vp_events"],
+  },
+  // Add more invited users here with their roles
+  // {
+  //   email: "user@example.com",
+  //   name: "User Name",
+  //   roles: ["team-member"],
+  // },
+];
 
 /**
  * Check if an email is in the invite list
