@@ -2,7 +2,6 @@ import { useState } from "react";
 import { X, Send } from "lucide-react";
 import { useTask } from "@/contexts/TaskContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { useNotifications } from "@/contexts/NotificationsContext";
 import { Portfolio } from "@/contexts/CalendarContext";
 
 interface CreateTaskFormProps {
@@ -20,7 +19,6 @@ export default function CreateTaskForm({
 }: CreateTaskFormProps) {
   const { user } = useAuth();
   const { createTask } = useTask();
-  const { addNotification } = useNotifications();
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -48,7 +46,7 @@ export default function CreateTaskForm({
       return;
     }
 
-    const task = createTask({
+    createTask({
       title: formData.title,
       description: formData.description || undefined,
       portfolio,
@@ -58,14 +56,6 @@ export default function CreateTaskForm({
       priority: formData.priority,
       category: formData.category || undefined,
       dueDate: formData.dueDate || undefined,
-    });
-
-    // Add notification to assigned team member
-    addNotification({
-      type: "task-assigned",
-      title: "New Task Assigned",
-      message: `${user?.name} assigned "${formData.title}" to you in ${portfolio}`,
-      relatedTo: task.id,
     });
 
     // Reset form

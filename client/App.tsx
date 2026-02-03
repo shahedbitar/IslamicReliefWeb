@@ -6,7 +6,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
-import { NotificationsProvider } from "@/contexts/NotificationsContext";
 import { CalendarProvider } from "@/contexts/CalendarContext";
 import { EventProvider } from "@/contexts/EventContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
@@ -29,8 +28,7 @@ const App = () => (
       <AuthProvider>
         <CalendarProvider>
           <EventProvider>
-            <NotificationsProvider>
-              <BrowserRouter>
+            <BrowserRouter>
               <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<Login />} />
@@ -62,8 +60,7 @@ const App = () => (
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
-              </BrowserRouter>
-            </NotificationsProvider>
+            </BrowserRouter>
           </EventProvider>
         </CalendarProvider>
       </AuthProvider>

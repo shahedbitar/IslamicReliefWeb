@@ -119,106 +119,13 @@ const EventContext = createContext<EventContextType | undefined>(undefined);
 export const EventProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [events, setEvents] = useState<Event[]>([
-    {
-      id: "e1",
-      title: "Lantern Painting Event",
-      description: "Community lantern painting and cultural celebration",
-      portfolio: "events",
-      createdBy: "Fatima Al-Rashid",
-      status: "in-progress",
-      dateTime: "2024-06-22",
-      location: "Main Campus Hall",
-      budget: 500,
-      marketingRequested: false,
-      externalsNeeded: false,
-      checklist: [
-        { id: "c1", label: "Date & location confirmed", completed: true, required: true },
-        { id: "c2", label: "Budget submitted to Finance", completed: true, required: true },
-        { id: "c3", label: "Volunteers plan ready", completed: false, required: false },
-        { id: "c4", label: "Marketing request submitted", completed: false, required: false },
-        { id: "c5", label: "Externals request submitted", completed: false, required: false },
-        { id: "c6", label: "Supplies confirmed", completed: false, required: false },
-        { id: "c7", label: "Day-of plan ready", completed: false, required: false },
-        { id: "c8", label: "Post-event recap submitted", completed: false, required: false },
-      ],
-      createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
-      updatedAt: new Date(Date.now() - 12 * 60 * 60 * 1000),
-    },
-    {
-      id: "e2",
-      title: "Halal Food Bank Drive",
-      description: "Community food bank initiative",
-      portfolio: "charity",
-      createdBy: "Amir Hassan",
-      status: "approved",
-      dateTime: "2024-06-15",
-      location: "Downtown Food Bank",
-      budget: 0,
-      marketingRequested: true,
-      externalsNeeded: true,
-      externalsComment: "Need to coordinate with local food suppliers and community organizations for donations and logistics support",
-      checklist: [
-        { id: "c1", label: "Date & location confirmed", completed: true, required: true },
-        { id: "c2", label: "Budget submitted to Finance", completed: true, required: true },
-        { id: "c3", label: "Volunteers plan ready", completed: true, required: false },
-        { id: "c4", label: "Marketing request submitted", completed: true, required: false },
-        { id: "c5", label: "Externals request submitted", completed: true, required: false },
-        { id: "c6", label: "Supplies confirmed", completed: true, required: false },
-      ],
-      approvedBy: "Sarah Khan",
-      approvedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
-      createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-      updatedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
-    },
-  ]);
+  const [events, setEvents] = useState<Event[]>([]);
 
-  const [socialEvents, setSocialEvents] = useState<SocialEvent[]>([
-    {
-      id: "s1",
-      title: "Team Lunch Gathering",
-      description: "Casual team lunch to celebrate Q2 achievements",
-      dateTime: "2024-06-20",
-      location: "Campus Cafeteria",
-      createdBy: "Aisha Patel",
-      createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-    },
-    {
-      id: "s2",
-      title: "Board Game Night",
-      description: "Fun team bonding activity with board games and snacks",
-      dateTime: "2024-06-25",
-      location: "Student Lounge",
-      createdBy: "Aisha Patel",
-      createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
-    },
-  ]);
+  const [socialEvents, setSocialEvents] = useState<SocialEvent[]>([]);
 
-  const [fundraisingEntries, setFundraisingEntries] = useState<FundraisingEntry[]>([
-    {
-      id: "f1",
-      title: "Fundraising Booths",
-      amount: 350,
-      source: "Booth",
-      submittedBy: "Finance VP",
-      date: "2024-06-10",
-      notes: "Campus fundraising booths revenue",
-      createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-    },
-  ]);
+  const [fundraisingEntries, setFundraisingEntries] = useState<FundraisingEntry[]>([]);
 
-  const [reimbursements, setReimbursements] = useState<Reimbursement[]>([
-    {
-      id: "r1",
-      amount: 45.50,
-      description: "Printing materials for event promotion",
-      relatedEventId: "e1",
-      submittedBy: "Fatima Al-Rashid",
-      status: "pending",
-      createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
-      updatedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
-    },
-  ]);
+  const [reimbursements, setReimbursements] = useState<Reimbursement[]>([]);
 
   const createEvent = (event: Omit<Event, "id" | "createdAt" | "updatedAt" | "checklist">): Event => {
     // Default checklist items (all portfolios get these)
