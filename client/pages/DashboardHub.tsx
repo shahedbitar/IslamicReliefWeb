@@ -33,11 +33,18 @@ interface MeetingMinute {
   googleDocUrl: string;
 }
 
+interface LeaderboardEntry {
+  id: string;
+  name: string;
+  points: number;
+  portfolio?: string;
+}
+
 export default function DashboardHub() {
   const { user } = useAuth();
   const { events, fundraisingEntries, getTotalMoneyRaised, socialEvents } = useEvent();
   const { events: calendarEvents } = useCalendar();
-  const [activeTab, setActiveTab] = useState<"money" | "minutes" | "team">("money");
+  const [activeTab, setActiveTab] = useState<"money" | "minutes" | "leaderboard">("money");
   const [portfolioView, setPortfolioView] = useState<"my" | "all">("my"); // For VPs: my portfolio or all portfolios
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [meetingMinutes, setMeetingMinutes] = useState<MeetingMinute[]>(() => {
@@ -53,39 +60,36 @@ export default function DashboardHub() {
   });
   const [showAddMinutes, setShowAddMinutes] = useState(false);
   const [newMinute, setNewMinute] = useState({ googleDocUrl: "" });
-  const [selectedTeamPortfolio, setSelectedTeamPortfolio] = useState("presidential-team");
+  const [leaderboardEntries] = useState<LeaderboardEntry[]>(() => {
+    const stored = localStorage.getItem("irc_leaderboard_entries");
+    if (stored) {
+      try {
+        return JSON.parse(stored) as LeaderboardEntry[];
+      } catch {
+        // ignore parse errors
+      }
+    }
+    return [];
+  });
 
   useEffect(() => {
     localStorage.setItem("irc_meeting_minutes", JSON.stringify(meetingMinutes));
   }, [meetingMinutes]);
 
-  const teamMembers: Array<{
-    name: string;
-    position: string;
-    portfolio: string;
-    uwoEmail: string;
-    gmail: string;
-  }> = [];
-
-  const teamPortfolios = [
-    { id: "finance", label: "Finance" },
-    { id: "marketing", label: "Marketing" },
-    { id: "advocacy", label: "Advocacy" },
-    { id: "internals", label: "Internals" },
-    { id: "externals", label: "Externals" },
-    { id: "presidential-team", label: "Presidential Team" },
-    { id: "charity", label: "Charity" },
-  ];
-
-  const execMembers = teamMembers.filter(
-    (member) =>
-      member.position.toLowerCase().includes("vp") ||
-      member.position.toLowerCase().includes("president"),
-  );
-
-  const visibleTeamMembers = execMembers.filter(
-    (member) => member.portfolio === selectedTeamPortfolio,
-  );
+  const portfolioOrder = ["externals", "internals", "marketing", "advocacy", "charity", "events", "finance"];
+  const sortedLeaderboard = portfolioOrder
+    .map((portfolio) => {
+      const entry = leaderboardEntries.find(
+        (item) => (item.portfolio || item.name).toLowerCase() === portfolio,
+      );
+      return {
+        id: entry?.id ?? `portfolio-${portfolio}`,
+        name: portfolio,
+        points: entry?.points ?? 0,
+        portfolio,
+      };
+    })
+    .sort((a, b) => b.points - a.points);
 
   // Get selected event details (check both calendar events and social events)
   const selectedEvent = selectedEventId
@@ -330,16 +334,16 @@ export default function DashboardHub() {
                 </div>
               </button>
               <button
-                onClick={() => setActiveTab("team")}
+                onClick={() => setActiveTab("leaderboard")}
                 className={`px-4 py-2 font-semibold text-sm transition-colors ${
-                  activeTab === "team"
+                  activeTab === "leaderboard"
                     ? "text-blue-600 border-b-2 border-blue-600"
                     : "text-gray-600 hover:text-gray-900"
                 }`}
               >
                 <div className="flex items-center gap-2">
-                  <span className="text-lg">🤝</span>
-                  View Team
+                  <span className="text-lg">🏆</span>
+                  Leaderboard
                 </div>
               </button>
             </div>
@@ -463,59 +467,40 @@ export default function DashboardHub() {
               </div>
             )}
 
-            {/* View Team Tab */}
-            {activeTab === "team" && (
+            {/* Leaderboard Tab */}
+            {activeTab === "leaderboard" && (
               <div className="bg-white rounded-lg border border-gray-200 p-6">
-                <h3 className="font-semibold text-gray-900 mb-4">View the Team</h3>
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {teamPortfolios.map((portfolio) => (
-                    <button
-                      key={portfolio.id}
-                      type="button"
-                      onClick={() => setSelectedTeamPortfolio(portfolio.id)}
-                      className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${
-                        selectedTeamPortfolio === portfolio.id
-                          ? "bg-blue-600 text-white"
-                          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                      }`}
-                    >
-                      {portfolio.label}
-                    </button>
-                  ))}
-                </div>
+                <h3 className="font-semibold text-gray-900 mb-1">Portfolio Leaderboard</h3>
+                <p className="text-xs text-gray-500 mb-4">
+                  Ranked by total points across all portfolios.
+                </p>
                 <div className="space-y-3 max-h-96 overflow-y-auto">
-                  {visibleTeamMembers.length > 0 ? (
-                    visibleTeamMembers.map((member) => (
-                      <div
-                        key={`${member.name}-${member.portfolio}`}
-                        className="p-3 border border-gray-200 rounded-lg"
-                      >
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <p className="font-semibold text-gray-900">
-                              {member.name}
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              {member.position}
-                            </p>
-                          </div>
-                          <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-1 rounded-full capitalize">
-                            {member.portfolio.replace("-", " ")}
+                  {sortedLeaderboard.map((entry, index) => (
+                    <div
+                      key={entry.id}
+                      className="p-3 border border-gray-200 rounded-lg"
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <span className="text-lg">
+                            {index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : "⭐"}
                           </span>
+                          <div>
+                            <p className="font-semibold text-gray-900 capitalize">
+                              {(entry.portfolio || entry.name).replace("-", " ")}
+                            </p>
+                            <p className="text-xs text-gray-500">Portfolio</p>
+                          </div>
                         </div>
-                        <div className="mt-2 text-xs text-gray-600 space-y-1">
-                          {member.uwoEmail && (
-                            <p>UWO: {member.uwoEmail}</p>
-                          )}
-                          {member.gmail && <p>Gmail: {member.gmail}</p>}
+                        <div className="text-right">
+                          <p className="text-lg font-bold text-blue-600">
+                            {entry.points}
+                          </p>
+                          <p className="text-[11px] text-gray-500">points</p>
                         </div>
                       </div>
-                    ))
-                  ) : (
-                    <p className="text-sm text-gray-500 text-center py-6">
-                      No executive members listed yet for this portfolio.
-                    </p>
-                  )}
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
