@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
 
 export type Portfolio =
   | "charity"
@@ -34,14 +34,33 @@ interface CalendarContextType {
   getEventsByDate: (date: string) => CalendarEvent[];
 }
 
+const CALENDAR_STORAGE_KEY = "irc_calendar_events";
+
 const CalendarContext = createContext<CalendarContextType | undefined>(
-  undefined
+  undefined,
 );
 
 export const CalendarProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const [events, setEvents] = useState<CalendarEvent[]>(() => {
+    const stored = localStorage.getItem(CALENDAR_STORAGE_KEY);
+    if (!stored) return [];
+
+    try {
+      const parsed = JSON.parse(stored) as Array<CalendarEvent & { createdAt: string }>;
+      return parsed.map((event) => ({
+        ...event,
+        createdAt: new Date(event.createdAt),
+      }));
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    localStorage.setItem(CALENDAR_STORAGE_KEY, JSON.stringify(events));
+  }, [events]);
 
   const addEvent = (event: Omit<CalendarEvent, "id" | "createdAt">) => {
     const newEvent: CalendarEvent = {
@@ -54,7 +73,7 @@ export const CalendarProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const updateEvent = (id: string, updates: Partial<CalendarEvent>) => {
     setEvents((prev) =>
-      prev.map((event) => (event.id === id ? { ...event, ...updates } : event))
+      prev.map((event) => (event.id === id ? { ...event, ...updates } : event)),
     );
   };
 
@@ -70,7 +89,7 @@ export const CalendarProvider: React.FC<{ children: React.ReactNode }> = ({
     return events.filter(
       (event) =>
         event.visible &&
-        ["marketing", "charity", "events", "internals"].includes(event.portfolio)
+        ["marketing", "charity", "events", "internals"].includes(event.portfolio),
     );
   };
 

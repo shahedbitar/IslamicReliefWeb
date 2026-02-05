@@ -8,6 +8,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { CalendarProvider } from "@/contexts/CalendarContext";
 import { EventProvider } from "@/contexts/EventContext";
+import { TaskProvider } from "@/contexts/TaskContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 
 import Index from "./pages/Index";
@@ -28,6 +29,7 @@ const App = () => (
       <AuthProvider>
         <CalendarProvider>
           <EventProvider>
+            <TaskProvider>
             <BrowserRouter>
               <Routes>
               <Route path="/" element={<Index />} />
@@ -61,6 +63,7 @@ const App = () => (
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>
+            </TaskProvider>
           </EventProvider>
         </CalendarProvider>
       </AuthProvider>

@@ -41,7 +41,7 @@ interface LeaderboardEntry {
 }
 
 export default function DashboardHub() {
-  const { user } = useAuth();
+  const { user, hasRole } = useAuth();
   const { events, fundraisingEntries, getTotalMoneyRaised, socialEvents } = useEvent();
   const { events: calendarEvents } = useCalendar();
   const [activeTab, setActiveTab] = useState<"money" | "minutes" | "leaderboard">("money");
@@ -60,7 +60,7 @@ export default function DashboardHub() {
   });
   const [showAddMinutes, setShowAddMinutes] = useState(false);
   const [newMinute, setNewMinute] = useState({ googleDocUrl: "" });
-  const [leaderboardEntries] = useState<LeaderboardEntry[]>(() => {
+  const [leaderboardEntries, setLeaderboardEntries] = useState<LeaderboardEntry[]>(() => {
     const stored = localStorage.getItem("irc_leaderboard_entries");
     if (stored) {
       try {
@@ -76,6 +76,10 @@ export default function DashboardHub() {
     localStorage.setItem("irc_meeting_minutes", JSON.stringify(meetingMinutes));
   }, [meetingMinutes]);
 
+  useEffect(() => {
+    localStorage.setItem("irc_leaderboard_entries", JSON.stringify(leaderboardEntries));
+  }, [leaderboardEntries]);
+
   const portfolioOrder = ["externals", "internals", "marketing", "advocacy", "charity", "events", "finance"];
   const sortedLeaderboard = portfolioOrder
     .map((portfolio) => {
@@ -90,6 +94,10 @@ export default function DashboardHub() {
       };
     })
     .sort((a, b) => b.points - a.points);
+  const canEditLeaderboard =
+    user?.role === "co-president" ||
+    hasRole("co_president") ||
+    hasRole("co-president");
 
   // Get selected event details (check both calendar events and social events)
   const selectedEvent = selectedEventId
@@ -229,6 +237,33 @@ export default function DashboardHub() {
 
   const handleDeleteMinute = (id: string) => {
     setMeetingMinutes(meetingMinutes.filter(m => m.id !== id));
+  };
+
+  const updateLeaderboardPoints = (portfolio: string, nextPoints: number) => {
+    const safePoints = Math.max(0, nextPoints);
+    setLeaderboardEntries((prev) => {
+      const existing = prev.find(
+        (entry) => (entry.portfolio || entry.name).toLowerCase() === portfolio.toLowerCase(),
+      );
+
+      if (existing) {
+        return prev.map((entry) =>
+          (entry.portfolio || entry.name).toLowerCase() === portfolio.toLowerCase()
+            ? { ...entry, points: safePoints, portfolio }
+            : entry,
+        );
+      }
+
+      return [
+        ...prev,
+        {
+          id: `portfolio-${portfolio}`,
+          name: portfolio,
+          portfolio,
+          points: safePoints,
+        },
+      ];
+    });
   };
 
   return (
@@ -474,6 +509,11 @@ export default function DashboardHub() {
                 <p className="text-xs text-gray-500 mb-4">
                   Ranked by total points across all portfolios.
                 </p>
+                {canEditLeaderboard && (
+                  <p className="text-xs text-blue-700 bg-blue-50 border border-blue-200 rounded-md px-3 py-2 mb-4">
+                    Co-President Edit Mode: You can adjust leaderboard points.
+                  </p>
+                )}
                 <div className="space-y-3 max-h-96 overflow-y-auto">
                   {sortedLeaderboard.map((entry, index) => (
                     <div
@@ -492,12 +532,48 @@ export default function DashboardHub() {
                             <p className="text-xs text-gray-500">Portfolio</p>
                           </div>
                         </div>
-                        <div className="text-right">
-                          <p className="text-lg font-bold text-blue-600">
-                            {entry.points}
-                          </p>
-                          <p className="text-[11px] text-gray-500">points</p>
-                        </div>
+                        {canEditLeaderboard ? (
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() =>
+                                updateLeaderboardPoints(entry.portfolio || entry.name, entry.points - 1)
+                              }
+                              className="px-2 py-1 text-sm font-semibold rounded border border-gray-300 hover:bg-gray-50"
+                              aria-label={`Decrease ${(entry.portfolio || entry.name).replace("-", " ")} points`}
+                            >
+                              -
+                            </button>
+                            <input
+                              type="number"
+                              min={0}
+                              value={entry.points}
+                              onChange={(e) =>
+                                updateLeaderboardPoints(
+                                  entry.portfolio || entry.name,
+                                  Number(e.target.value || 0),
+                                )
+                              }
+                              className="w-20 text-right text-sm font-semibold border border-gray-300 rounded px-2 py-1"
+                              aria-label={`${(entry.portfolio || entry.name).replace("-", " ")} points`}
+                            />
+                            <button
+                              onClick={() =>
+                                updateLeaderboardPoints(entry.portfolio || entry.name, entry.points + 1)
+                              }
+                              className="px-2 py-1 text-sm font-semibold rounded border border-gray-300 hover:bg-gray-50"
+                              aria-label={`Increase ${(entry.portfolio || entry.name).replace("-", " ")} points`}
+                            >
+                              +
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="text-right">
+                            <p className="text-lg font-bold text-blue-600">
+                              {entry.points}
+                            </p>
+                            <p className="text-[11px] text-gray-500">points</p>
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))}

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
 import { Portfolio } from "./CalendarContext";
 
 export type EventStatus = "in-progress" | "ready" | "approved";
@@ -114,18 +114,95 @@ interface EventContextType {
   rejectReimbursement: (id: string, approverComment: string) => void;
 }
 
+
+const EVENT_STORAGE_KEY = "irc_event_context";
+
+interface EventStoragePayload {
+  events: Event[];
+  socialEvents: SocialEvent[];
+  fundraisingEntries: FundraisingEntry[];
+  reimbursements: Reimbursement[];
+}
+
+function hydrateEventStorage(raw: EventStoragePayload): EventStoragePayload {
+  return {
+    events: raw.events.map((event) => ({
+      ...event,
+      createdAt: new Date(event.createdAt),
+      updatedAt: new Date(event.updatedAt),
+      approvedAt: event.approvedAt ? new Date(event.approvedAt) : undefined,
+    })),
+    socialEvents: raw.socialEvents.map((event) => ({
+      ...event,
+      createdAt: new Date(event.createdAt),
+    })),
+    fundraisingEntries: raw.fundraisingEntries.map((entry) => ({
+      ...entry,
+      createdAt: new Date(entry.createdAt),
+    })),
+    reimbursements: raw.reimbursements.map((reimbursement) => ({
+      ...reimbursement,
+      createdAt: new Date(reimbursement.createdAt),
+      updatedAt: new Date(reimbursement.updatedAt),
+    })),
+  };
+}
+
 const EventContext = createContext<EventContextType | undefined>(undefined);
 
 export const EventProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [events, setEvents] = useState<Event[]>([]);
+  const [events, setEvents] = useState<Event[]>(() => {
+    const stored = localStorage.getItem(EVENT_STORAGE_KEY);
+    if (!stored) return [];
+    try {
+      const payload = hydrateEventStorage(JSON.parse(stored) as EventStoragePayload);
+      return payload.events;
+    } catch {
+      return [];
+    }
+  });
 
-  const [socialEvents, setSocialEvents] = useState<SocialEvent[]>([]);
+  const [socialEvents, setSocialEvents] = useState<SocialEvent[]>(() => {
+    const stored = localStorage.getItem(EVENT_STORAGE_KEY);
+    if (!stored) return [];
+    try {
+      const payload = hydrateEventStorage(JSON.parse(stored) as EventStoragePayload);
+      return payload.socialEvents;
+    } catch {
+      return [];
+    }
+  });
 
-  const [fundraisingEntries, setFundraisingEntries] = useState<FundraisingEntry[]>([]);
+  const [fundraisingEntries, setFundraisingEntries] = useState<FundraisingEntry[]>(() => {
+    const stored = localStorage.getItem(EVENT_STORAGE_KEY);
+    if (!stored) return [];
+    try {
+      const payload = hydrateEventStorage(JSON.parse(stored) as EventStoragePayload);
+      return payload.fundraisingEntries;
+    } catch {
+      return [];
+    }
+  });
 
-  const [reimbursements, setReimbursements] = useState<Reimbursement[]>([]);
+  const [reimbursements, setReimbursements] = useState<Reimbursement[]>(() => {
+    const stored = localStorage.getItem(EVENT_STORAGE_KEY);
+    if (!stored) return [];
+    try {
+      const payload = hydrateEventStorage(JSON.parse(stored) as EventStoragePayload);
+      return payload.reimbursements;
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    localStorage.setItem(
+      EVENT_STORAGE_KEY,
+      JSON.stringify({ events, socialEvents, fundraisingEntries, reimbursements }),
+    );
+  }, [events, socialEvents, fundraisingEntries, reimbursements]);
 
   const createEvent = (event: Omit<Event, "id" | "createdAt" | "updatedAt" | "checklist">): Event => {
     // Default checklist items (all portfolios get these)
@@ -147,12 +224,12 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({
       createdAt: new Date(),
       updatedAt: new Date(),
     };
-    setEvents([...events, newEvent]);
+    setEvents((prev) => [...prev, newEvent]);
     return newEvent;
   };
 
   const updateEvent = (id: string, updates: Partial<Event>) => {
-    setEvents(events.map(e => 
+    setEvents((prev) => prev.map(e => 
       e.id === id 
         ? { ...e, ...updates, updatedAt: new Date() }
         : e
@@ -160,7 +237,7 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const deleteEvent = (id: string) => {
-    setEvents(events.filter(e => e.id !== id));
+    setEvents((prev) => prev.filter(e => e.id !== id));
   };
 
   const getEventsByPortfolio = (portfolio: Portfolio): Event[] => {
@@ -172,7 +249,7 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const updateChecklistItem = (eventId: string, itemId: string, completed: boolean) => {
-    setEvents(events.map(e => {
+    setEvents((prev) => prev.map(e => {
       if (e.id === eventId) {
         return {
           ...e,
@@ -187,7 +264,7 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const addChecklistItem = (eventId: string, item: Omit<ChecklistItem, "id">) => {
-    setEvents(events.map(e => {
+    setEvents((prev) => prev.map(e => {
       if (e.id === eventId) {
         return {
           ...e,
@@ -250,12 +327,12 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({
       id: Date.now().toString(),
       createdAt: new Date(),
     };
-    setSocialEvents([...socialEvents, newSocialEvent]);
+    setSocialEvents((prev) => [...prev, newSocialEvent]);
     return newSocialEvent;
   };
 
   const deleteSocialEvent = (id: string) => {
-    setSocialEvents(socialEvents.filter(e => e.id !== id));
+    setSocialEvents((prev) => prev.filter(e => e.id !== id));
   };
 
   const getUpcomingSocials = (): SocialEvent[] => {
@@ -272,18 +349,18 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({
       id: Date.now().toString(),
       createdAt: new Date(),
     };
-    setFundraisingEntries([...fundraisingEntries, newEntry]);
+    setFundraisingEntries((prev) => [...prev, newEntry]);
     return newEntry;
   };
 
   const updateFundraisingEntry = (id: string, updates: Partial<FundraisingEntry>) => {
-    setFundraisingEntries(fundraisingEntries.map(e =>
+    setFundraisingEntries((prev) => prev.map(e =>
       e.id === id ? { ...e, ...updates } : e
     ));
   };
 
   const deleteFundraisingEntry = (id: string) => {
-    setFundraisingEntries(fundraisingEntries.filter(e => e.id !== id));
+    setFundraisingEntries((prev) => prev.filter(e => e.id !== id));
   };
 
   const getTotalMoneyRaised = (): number => {
@@ -297,18 +374,18 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({
       createdAt: new Date(),
       updatedAt: new Date(),
     };
-    setReimbursements([...reimbursements, newReimbursement]);
+    setReimbursements((prev) => [...prev, newReimbursement]);
     return newReimbursement;
   };
 
   const updateReimbursement = (id: string, updates: Partial<Reimbursement>) => {
-    setReimbursements(reimbursements.map(r =>
+    setReimbursements((prev) => prev.map(r =>
       r.id === id ? { ...r, ...updates, updatedAt: new Date() } : r
     ));
   };
 
   const deleteReimbursement = (id: string) => {
-    setReimbursements(reimbursements.filter(r => r.id !== id));
+    setReimbursements((prev) => prev.filter(r => r.id !== id));
   };
 
   const getReimbursements = (): Reimbursement[] => {
