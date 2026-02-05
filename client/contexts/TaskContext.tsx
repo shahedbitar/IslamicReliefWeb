@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
 import { Portfolio } from "./CalendarContext";
 
 export type TaskStatus = "todo" | "in-progress" | "review" | "done";
@@ -54,15 +54,62 @@ interface TaskContextType {
   updateTaskStatus: (taskId: string, status: TaskStatus) => void;
 }
 
+const TASK_STORAGE_KEY = "irc_tasks";
+
 const TaskContext = createContext<TaskContextType | undefined>(undefined);
+
+function hydrateTask(raw: Task & {
+  createdAt: string;
+  updatedAt: string;
+  completedAt?: string;
+  comments: Array<TaskComment & { timestamp: string }>;
+  attachments: Array<TaskAttachment & { uploadedAt: string }>;
+}): Task {
+  return {
+    ...raw,
+    createdAt: new Date(raw.createdAt),
+    updatedAt: new Date(raw.updatedAt),
+    completedAt: raw.completedAt ? new Date(raw.completedAt) : undefined,
+    comments: raw.comments.map((comment) => ({
+      ...comment,
+      timestamp: new Date(comment.timestamp),
+    })),
+    attachments: raw.attachments.map((attachment) => ({
+      ...attachment,
+      uploadedAt: new Date(attachment.uploadedAt),
+    })),
+  };
+}
 
 export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const [tasks, setTasks] = useState<Task[]>(() => {
+    const stored = localStorage.getItem(TASK_STORAGE_KEY);
+    if (!stored) return [];
+
+    try {
+      const parsed = JSON.parse(stored) as Array<
+        Task & {
+          createdAt: string;
+          updatedAt: string;
+          completedAt?: string;
+          comments: Array<TaskComment & { timestamp: string }>;
+          attachments: Array<TaskAttachment & { uploadedAt: string }>;
+        }
+      >;
+      return parsed.map(hydrateTask);
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    localStorage.setItem(TASK_STORAGE_KEY, JSON.stringify(tasks));
+  }, [tasks]);
 
   const createTask = (
-    taskData: Omit<Task, "id" | "createdAt" | "updatedAt" | "comments" | "attachments">
+    taskData: Omit<Task, "id" | "createdAt" | "updatedAt" | "comments" | "attachments">,
   ): Task => {
     const newTask: Task = {
       ...taskData,
@@ -81,8 +128,8 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({
       prev.map((task) =>
         task.id === id
           ? { ...task, ...updates, updatedAt: new Date() }
-          : task
-      )
+          : task,
+      ),
     );
   };
 
@@ -108,14 +155,12 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({
       (task) =>
         task.dueDate &&
         task.dueDate < today &&
-        task.status !== "done"
+        task.status !== "done",
     );
   };
 
   const getTasksDueSoon = (): Task[] => {
     const today = new Date();
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
     const nextWeek = new Date(today);
     nextWeek.setDate(nextWeek.getDate() + 7);
 
@@ -124,13 +169,13 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({
         task.dueDate &&
         new Date(task.dueDate) >= today &&
         new Date(task.dueDate) <= nextWeek &&
-        task.status !== "done"
+        task.status !== "done",
     );
   };
 
   const addComment = (
     taskId: string,
-    commentData: Omit<TaskComment, "id" | "timestamp">
+    commentData: Omit<TaskComment, "id" | "timestamp">,
   ) => {
     setTasks((prev) =>
       prev.map((task) =>
@@ -147,14 +192,14 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({
               ],
               updatedAt: new Date(),
             }
-          : task
-      )
+          : task,
+      ),
     );
   };
 
   const addAttachment = (
     taskId: string,
-    attachmentData: Omit<TaskAttachment, "id" | "uploadedAt">
+    attachmentData: Omit<TaskAttachment, "id" | "uploadedAt">,
   ) => {
     setTasks((prev) =>
       prev.map((task) =>
@@ -171,8 +216,8 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({
               ],
               updatedAt: new Date(),
             }
-          : task
-      )
+          : task,
+      ),
     );
   };
 
@@ -186,8 +231,8 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({
               completedAt: status === "done" ? new Date() : undefined,
               updatedAt: new Date(),
             }
-          : task
-      )
+          : task,
+      ),
     );
   };
 

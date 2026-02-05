@@ -3,6 +3,7 @@ import express from "express";
 import cors from "cors";
 import { handleDemo } from "./routes/demo";
 import { checkInvite } from "./routes/auth";
+import { getSetupStatus } from "./routes/setup-status";
 
 export function createServer() {
   const app = express();
@@ -22,6 +23,9 @@ export function createServer() {
 
   // Auth routes
   app.post("/api/auth/check-invite", checkInvite);
+
+  // Setup diagnostics
+  app.get("/api/setup/status", getSetupStatus);
 
   return app;
 }
